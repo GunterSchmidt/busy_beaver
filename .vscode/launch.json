@@ -1,0 +1,215 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug unit tests in library 'bb_challenge'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--lib",
+        //                 "--package=bb_challenge"
+        //             ],
+        //             "filter": {
+        //                 "name": "bb_challenge",
+        //                 "kind": "lib"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug benchmark 'bench_bb_challenge'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--bench=bench_bb_challenge",
+        //                 "--package=bb_challenge"
+        //             ],
+        //             "filter": {
+        //                 "name": "bench_bb_challenge",
+        //                 "kind": "bench"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug unit tests in library 'busy_beaver'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--lib",
+        //                 "--package=busy_beaver"
+        //             ],
+        //             "filter": {
+        //                 "name": "busy_beaver",
+        //                 "kind": "lib"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'busy_beaver'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=busy_beaver",
+                    "--package=busy_beaver"
+                ],
+                "filter": {
+                    "name": "busy_beaver",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug unit tests in executable 'busy_beaver'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--bin=busy_beaver",
+        //                 "--package=busy_beaver"
+        //             ],
+        //             "filter": {
+        //                 "name": "busy_beaver",
+        //                 "kind": "bin"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug benchmark 'bench_busy_beaver'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--bench=bench_busy_beaver",
+        //                 "--package=busy_beaver"
+        //             ],
+        //             "filter": {
+        //                 "name": "bench_busy_beaver",
+        //                 "kind": "bench"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug benchmark 'bench_test_run_deciders'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--bench=bench_test_run_deciders",
+        //                 "--package=busy_beaver"
+        //             ],
+        //             "filter": {
+        //                 "name": "bench_test_run_deciders",
+        //                 "kind": "bench"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug unit tests in library 'busy_beaver_v1'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--lib",
+        //                 "--package=busy_beaver_v1"
+        //             ],
+        //             "filter": {
+        //                 "name": "busy_beaver_v1",
+        //                 "kind": "lib"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug executable 'busy_beaver_v1'",
+        //         "cargo": {
+        //             "args": [
+        //                 "build",
+        //                 "--bin=busy_beaver_v1",
+        //                 "--package=busy_beaver_v1"
+        //             ],
+        //             "filter": {
+        //                 "name": "busy_beaver_v1",
+        //                 "kind": "bin"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug unit tests in executable 'busy_beaver_v1'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--bin=busy_beaver_v1",
+        //                 "--package=busy_beaver_v1"
+        //             ],
+        //             "filter": {
+        //                 "name": "busy_beaver_v1",
+        //                 "kind": "bin"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     {
+        //         "type": "lldb",
+        //         "request": "launch",
+        //         "name": "Debug benchmark 'bench_busy_beaver_v1'",
+        //         "cargo": {
+        //             "args": [
+        //                 "test",
+        //                 "--no-run",
+        //                 "--bench=bench_busy_beaver_v1",
+        //                 "--package=busy_beaver_v1"
+        //             ],
+        //             "filter": {
+        //                 "name": "bench_busy_beaver_v1",
+        //                 "kind": "bench"
+        //             }
+        //         },
+        //         "args": [],
+        //         "cwd": "${workspaceFolder}"
+        //     }
+    ]
+}
