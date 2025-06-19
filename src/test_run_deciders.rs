@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::time::Duration;
 
 use bb_challenge::{
@@ -31,7 +32,7 @@ pub fn run_generator_pre_deciders(config: &Config) -> ResultDecider {
         duration_decider += d;
 
         if reporter.is_due_progress() {
-            reporter.report(result.num_evaluated, generator.limit(), &result);
+            reporter.report(result.num_checked_total(), generator.limit(), &result);
         }
 
         // println!("last id {}", permutations.last().unwrap());
@@ -159,24 +160,25 @@ fn pre_deciders_batch_undecided(
         //     println!("{}", machine);
         // }
 
-        result.num_evaluated += 1;
-        if status == MachineStatus::NoDecision {
-            result.num_undecided += 1;
-            // machine.status = MachineStatus::Undecided(UndecidedReason::DeciderNoResult, 0, 0);
-        }
-
-        // result.add(&machine);
-        // only check every 1000 machines, otherwise this takes half the time
-        if machine.id() & 1023 == 0 && reporter.is_due_progress() {
-            let mio = (result.num_evaluated as f64 / 100_000.0).round() / 10.0;
-            let p = (result.num_evaluated as f64 / total_to_check as f64 * 1000.0).round() / 10.0;
-            println!("Working: {} = {} million, {p}%", result.num_evaluated, mio);
-            reporter.reset_last_report_progress_time();
-            if reporter.is_due_detail() {
-                println!("\nCurrent result\n{}", result);
-                reporter.reset_last_report_detail_time();
-            }
-        }
+        // TODO repair if required
+        //         result.num_evaluated += 1;
+        //         if status == MachineStatus::NoDecision {
+        //             result.num_undecided += 1;
+        //             // machine.status = MachineStatus::Undecided(UndecidedReason::DeciderNoResult, 0, 0);
+        //         }
+        //
+        //         // result.add(&machine);
+        //         // only check every 1000 machines, otherwise this takes half the time
+        //         if machine.id() & 1023 == 0 && reporter.is_due_progress() {
+        //             let mio = (result.num_evaluated as f64 / 100_000.0).round() / 10.0;
+        //             let p = (result.num_evaluated as f64 / total_to_check as f64 * 1000.0).round() / 10.0;
+        //             println!("Working: {} = {} million, {p}%", result.num_evaluated, mio);
+        //             reporter.reset_last_report_progress_time();
+        //             if reporter.is_due_detail() {
+        //                 println!("\nCurrent result\n{}", result);
+        //                 reporter.reset_last_report_detail_time();
+        //             }
+        //         }
         // if machine.status == MachineStatus::DecidedEndless(EndlessReason::OnlyOneDirection) {
         //     println!("Only One {}", machine);
         //     println!();

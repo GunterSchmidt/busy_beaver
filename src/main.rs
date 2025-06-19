@@ -4,6 +4,7 @@
 // #![allow(unused)]
 
 mod arg_handler;
+mod test_bb5;
 mod test_machines;
 mod test_run_deciders;
 mod test_single_deciders;
@@ -40,9 +41,45 @@ use busy_beaver::{
 use test_machines::run_machine;
 use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
 
-// TODO create config
-// TODO rework Transition to hold 16 symbols
-// TODO Decider Long likt LoopV4, decide machine and remove machine from self. recycle
+// TODO rework Transition to hold 16 symbols?
+// TODO Decider Long like LoopV4, decide machine and remove machine from self. recycle
+// TODO Decider Long after LoopV4 with just 510 steps
+// TODO save undecided (with id)
+// TODO threaded: Why not just have x gen packs ready and then skip producing them?
+// TODO threaded: recycle threads
+// TODO threaded: Why so slow under windows?
+// TODO multiple deciders
+// TODO pre-decider as decider
+
+#[allow(unused)]
+fn test_run_decider() {
+    let start = Instant::now();
+    let config = Config::builder(5)
+        .generate_limit(0_000_000)
+        // .generator_batch_size_request_full(5_000_000)
+        .cpu_utilization(100)
+        .build();
+
+    // decider loop V4 for BB4
+    let decider = DeciderLoopV4::new(STEP_LIMIT_DECIDER_LOOP);
+    // let decider = DeciderU128Long::<SubDeciderDummy>::new(&config);
+    // let generator = GeneratorFull::new(&config);
+    let generator = GeneratorReduced::new(&config);
+    // let result = decider::run_decider_generator_single_thread(decider, generator);
+    let result = decider::run_decider_generator_threaded(decider, generator);
+    println!("{}", result.to_string_extended());
+    let duration = start.elapsed();
+    // println!("Duration: {:?}", duration);
+
+    // println!(
+    //     "\n Machine Max\n{}",
+    //     result
+    //         .machine_max_steps()
+    //         .unwrap()
+    //         .transition_table()
+    //         .to_table_string(false)
+    // );
+}
 
 /// Main function for tests, running deciders and other stuff.
 /// Arguments:
@@ -59,29 +96,10 @@ fn main() {
     // No arguments
     #[allow(unused)]
     if args.len() < 2 {
-        let start = Instant::now();
-        let config = Config::builder(4).generate_limit(000_000_000).build();
-
-        // decider loop V4 for BB4
         let decider = DeciderLoopV4::new(STEP_LIMIT_DECIDER_LOOP);
-        // let decider = DeciderU128Long::<SubDeciderDummy>::new(&config);
-        // let generator = GeneratorFull::new(&config);
-        let generator = GeneratorReduced::new(&config);
-        // let result = decider::run_decider_generator_single_thread(decider, generator);
-        let result = decider::run_decider_generator_threaded(decider, generator, 100);
-        println!("{}", result.to_string_extended());
+        let d2 = decider
 
-        // let duration = start.elapsed();
-        // println!("Duration: {:?}", duration);
-
-        println!(
-            "\n Machine Max\n{}",
-            result
-                .machine_max_steps()
-                .unwrap()
-                .transition_table()
-                .to_table_string(false)
-        );
+        test_run_decider();
 
         // let config = Config::builder(3).generate_limit(350_000_000).build();
         // // decider loop V4 for BB4

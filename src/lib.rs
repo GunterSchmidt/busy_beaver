@@ -61,10 +61,13 @@ pub fn run_decider_back_to_square_one(n_states: usize) {
 
     println!(
         "\nCompact time elapsed for run with {} machines: {:?}, with generation: {:?}",
-        result.num_evaluated, duration_run, duration_with_generation
+        result.num_checked_total(),
+        duration_run,
+        duration_with_generation
     );
 }
 
+#[allow(unused)]
 fn decider_back_to_square_one_batch(
     variants: &[Machine],
     result: &mut ResultDecider,
@@ -128,16 +131,17 @@ fn decider_back_to_square_one_batch(
 
         result.add(&machine, &status);
         // only check every 1000 machines, otherwise this takes half the time
-        if machine.id() & 1023 == 0 && reporter.is_due_progress() {
-            let mio = (result.num_evaluated as f64 / 100_000.0).round() / 10.0;
-            let p = (result.num_evaluated as f64 / total_to_check as f64 * 1000.0).round() / 10.0;
-            println!("Working: {} = {} million, {p}%", result.num_evaluated, mio);
-            reporter.reset_last_report_progress_time();
-            if reporter.is_due_detail() {
-                println!("\nCurrent result\n{}", result);
-                reporter.reset_last_report_detail_time();
-            }
-        }
+        // TODO repair if required
+        // if machine.id() & 1023 == 0 && reporter.is_due_progress() {
+        //     let mio = (result.num_evaluated as f64 / 100_000.0).round() / 10.0;
+        //     let p = (result.num_evaluated as f64 / total_to_check as f64 * 1000.0).round() / 10.0;
+        //     println!("Working: {} = {} million, {p}%", result.num_evaluated, mio);
+        //     reporter.reset_last_report_progress_time();
+        //     if reporter.is_due_detail() {
+        //         println!("\nCurrent result\n{}", result);
+        //         reporter.reset_last_report_detail_time();
+        //     }
+        // }
         // if machine.status == MachineStatus::DecidedEndless(EndlessReason::OnlyOneDirection) {
         //     println!("Only One {}", machine);
         //     println!();
