@@ -1,6 +1,6 @@
 use bb_challenge::{machine::Machine, result::ResultDecider};
 
-pub fn run_machine(machine: &mut Machine, repeat: usize) {
+pub(crate) fn run_machine(machine: &mut Machine, repeat: usize) {
     // println!("\nV2 Machine:\n{}", machine);
 
     for _ in 0..repeat {

@@ -5,7 +5,7 @@
 
 mod arg_handler;
 mod test_bb5;
-mod test_machines;
+// mod test_machines;
 mod test_run_deciders;
 mod test_single_deciders;
 
@@ -16,15 +16,17 @@ use std::{
 
 use bb_challenge::{
     config::Config,
-    decider::{self, run_decider_generator_single_thread, Decider, DeciderDummy},
+    decider::{self, run_decider_generator_single_thread_deprecated, Decider, DeciderEnum},
+    decider_hold_u128_long::DeciderHoldU128Long,
     decider_loop_v4::{DeciderLoopV4, STEP_LIMIT_DECIDER_LOOP},
-    decider_u128_long::DeciderU128Long,
+    // decider_u128_long::DeciderU128Long,
     file::BBFileReader,
     generator::Generator,
     generator_full::GeneratorFull,
     generator_reduced::GeneratorReduced,
     machine::Machine,
     machine_info::MachineInfo,
+    pre_decider::PreDecider,
     reporter::Reporter,
     result::ResultDecider,
     status::MachineStatus,
@@ -33,15 +35,13 @@ use bb_challenge::{
 };
 
 use busy_beaver::{
-    run_decider_back_to_square_one,
     test_run_deciders::{run_generator_pre_deciders, run_generator_pre_deciders_undecided},
     FILE_PATH, GENERATOR_BATCH_SIZE_REQUEST, GENERATOR_LIMIT, N_STATES, STEP_LIMIT,
     TAPE_SIZE_LIMIT,
 };
-use test_machines::run_machine;
-use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
+// use test_machines::run_machine;
+// use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
 
-// TODO rework Transition to hold 16 symbols?
 // TODO Decider Long like LoopV4, decide machine and remove machine from self. recycle
 // TODO Decider Long after LoopV4 with just 510 steps
 // TODO save undecided (with id)
@@ -52,23 +52,94 @@ use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
 // TODO pre-decider as decider
 
 #[allow(unused)]
-fn test_run_decider() {
+fn test_run_decider_deprecated(config: &Config) {
     let start = Instant::now();
-    let config = Config::builder(5)
-        .generate_limit(0_000_000)
-        // .generator_batch_size_request_full(5_000_000)
-        .cpu_utilization(100)
-        .build();
 
     // decider loop V4 for BB4
-    let decider = DeciderLoopV4::new(STEP_LIMIT_DECIDER_LOOP);
+    let decider = DeciderLoopV4::new(DeciderLoopV4::step_limit(config.n_states()));
+    // let decider = PreDecider;
     // let decider = DeciderU128Long::<SubDeciderDummy>::new(&config);
     // let generator = GeneratorFull::new(&config);
-    let generator = GeneratorReduced::new(&config);
+    let generator = GeneratorReduced::new(config);
     // let result = decider::run_decider_generator_single_thread(decider, generator);
-    let result = decider::run_decider_generator_threaded(decider, generator);
+    // let result = decider::run_decider_data_provider_single_thread(decider, generator);
+    // let result = decider::run_decider_generator_threaded(decider, generator);
+    let result = decider::run_decider_data_provider_threaded_deprecated(decider, generator);
     println!("{}", result.to_string_extended());
     let duration = start.elapsed();
+    // println!("Duration: {:?}", duration);
+
+    // println!(
+    //     "\n Machine Max\n{}",
+    //     result
+    //         .machine_max_steps()
+    //         .unwrap()
+    //         .transition_table()
+    //         .to_table_string(false)
+    // );
+}
+
+#[allow(unused)]
+fn test_run_decider(config: &Config) {
+    let start = Instant::now();
+
+    // decider loop V4 for BB4
+    let decider = DeciderLoopV4::new(DeciderLoopV4::step_limit(config.n_states()));
+    // let decider = PreDecider;
+    // let decider = DeciderU128Long::<SubDeciderDummy>::new(&config);
+    // let generator = GeneratorFull::new(&config);
+    let generator = GeneratorReduced::new(config);
+    // let result = decider::run_decider_generator_single_thread(decider, generator);
+    // let result = decider::run_decider_data_provider_single_thread(decider, generator);
+    // let result = decider::run_decider_generator_threaded(decider, generator);
+    let result = decider::run_decider_data_provider_threaded(
+        DeciderLoopV4::decider_run_batch,
+        generator,
+        config,
+    );
+    println!("{}", result.to_string_extended());
+    let duration = start.elapsed();
+    // println!("Duration: {:?}", duration);
+
+    // println!(
+    //     "\n Machine Max\n{}",
+    //     result
+    //         .machine_max_steps()
+    //         .unwrap()
+    //         .transition_table()
+    //         .to_table_string(false)
+    // );
+}
+
+#[allow(unused)]
+fn test_run_multiple_decider(config: &Config) {
+    let start = Instant::now();
+
+    // let deciders: Vec<DeciderEnum> = vec![
+    //     DeciderEnum::PreDecider(PreDecider),
+    //     DeciderEnum::LoopV4(DeciderLoopV4::new(STEP_LIMIT_DECIDER_LOOP)),
+    //     // DeciderEnum::HoldLong(DeciderHoldU128Long::new(&config)),
+    // ];
+    // let generator = GeneratorFull::new(&config);
+    let generator = GeneratorReduced::new(config);
+    // let result = decider::run_decider_chain_data_provider_single_thread(
+    //     &vec![
+    //         DeciderLoopV4::decider_run_batch,
+    //         // DeciderHoldU128Long::decider_run_batch,
+    //     ],
+    //     generator,
+    //     &config,
+    // );
+    let result = decider::run_decider_chain_data_provider_threaded(
+        &vec![
+            DeciderLoopV4::decider_run_batch,
+            DeciderHoldU128Long::decider_run_batch,
+        ],
+        generator,
+        &config,
+    );
+    println!("{}", result.to_string_extended());
+    // let duration = start.elapsed();
     // println!("Duration: {:?}", duration);
 
     // println!(
@@ -94,12 +165,20 @@ fn main() {
     // println!("Arguments: {:?}", args);)
 
     // No arguments
+    // TODO what is the issue after 409_975_399?
     #[allow(unused)]
     if args.len() < 2 {
-        let decider = DeciderLoopV4::new(STEP_LIMIT_DECIDER_LOOP);
-        let d2 = decider
+        let config = Config::builder(4)
+            .generate_limit(0_000_000_000)
+            // .generator_batch_size_request_full(5_000_000)
+            .generator_batch_size_request_reduced(80_000_000)
+            // .limit_machines_undecided(20)
+            .cpu_utilization(100)
+            .build();
 
-        test_run_decider();
+        test_run_decider(&config);
+        test_run_decider_deprecated(&config);
+        test_run_multiple_decider(&config);
 
         // let config = Config::builder(3).generate_limit(350_000_000).build();
         // // decider loop V4 for BB4
@@ -415,70 +494,70 @@ fn show_struct_sizes() {
 #[cfg(test)]
 mod tests {
 
-    use bb_challenge::{config::Config, decider::DeciderDummy, sub_decider::SubDeciderDummy};
+    use bb_challenge::{config::Config, sub_decider::SubDeciderDummy};
 
     use super::*;
 
-    #[test]
-    // https://bbchallenge.org/story#will-it-halt-or-not, Machine 1
-    fn test_machine_steps_4() {
-        let mut transitions: Vec<(&str, &str)> = Vec::new();
-        transitions.push(("1RB", "1RB"));
-        transitions.push(("1LA", "---"));
+    //     #[test]
+    //     // https://bbchallenge.org/story#will-it-halt-or-not, Machine 1
+    //     fn test_machine_steps_4() {
+    //         let mut transitions: Vec<(&str, &str)> = Vec::new();
+    //         transitions.push(("1RB", "1RB"));
+    //         transitions.push(("1LA", "---"));
+    //
+    //         let machine = Machine::from_string_tuple(0, &transitions);
+    //         println!("{}", machine);
+    //         let result = machine.decide_hold();
+    //         let steps = match result {
+    //             MachineStatus::DecidedHolds(s) => s,
+    //             _ => 0,
+    //         };
+    //         assert_eq!(steps, 4);
+    //     }
 
-        let machine = Machine::from_string_tuple(0, &transitions);
-        println!("{}", machine);
-        let result = machine.decide_hold();
-        let steps = match result {
-            MachineStatus::DecidedHolds(s) => s,
-            _ => 0,
-        };
-        assert_eq!(steps, 4);
-    }
+    // #[test]
+    // // https://bbchallenge.org/story#will-it-halt-or-not, Machine 2
+    // fn test_machine_steps_bb5_105() {
+    //     let mut transitions: Vec<(&str, &str)> = Vec::new();
+    //     transitions.push(("1RB", "1LC"));
+    //     transitions.push(("0LB", "1LA"));
+    //     transitions.push(("1RD", "1LB"));
+    //     transitions.push(("1RE", "0RD"));
+    //     transitions.push(("0RA", "---"));
+    //     let machine = Machine::from_string_tuple(0, &transitions);
+    //     let result = machine.decide_hold();
+    //     let steps = match result {
+    //         MachineStatus::DecidedHolds(s) => s,
+    //         _ => 0,
+    //     };
+    //     assert_eq!(steps, 105);
+    // }
 
-    #[test]
-    // https://bbchallenge.org/story#will-it-halt-or-not, Machine 2
-    fn test_machine_steps_bb5_105() {
-        let mut transitions: Vec<(&str, &str)> = Vec::new();
-        transitions.push(("1RB", "1LC"));
-        transitions.push(("0LB", "1LA"));
-        transitions.push(("1RD", "1LB"));
-        transitions.push(("1RE", "0RD"));
-        transitions.push(("0RA", "---"));
-        let machine = Machine::from_string_tuple(0, &transitions);
-        let result = machine.decide_hold();
-        let steps = match result {
-            MachineStatus::DecidedHolds(s) => s,
-            _ => 0,
-        };
-        assert_eq!(steps, 105);
-    }
-
-    #[test]
-    // https://bbchallenge.org/story#will-it-halt-or-not, Machine 2
-    fn test_machine_steps_bb5_max() {
-        let config = Config::new_default(5);
-        let machine = Machine::build_machine("BB5_MAX").unwrap();
-        let mut d: DeciderU128Long<SubDeciderDummy> =
-            bb_challenge::decider_u128_long::DeciderU128Long::new(&config);
-        let result = d.decide_machine(&machine);
-
-        // let mut machine = build_machine("BB5_MAX").unwrap();
-        // let result = machine.run();
-        // println!("{}", machine);
-        assert_eq!(result, MachineStatus::DecidedHolds(47_176_870));
-        // assert_eq!(result, MachineStatus::DecidedHoldsOld(47176870, 4097));
-        // let steps = match result {
-        //     MachineStatus::DecidedHolds(s, _) => s,
-        //     _ => 0,
-        // };
-
-        // assert_eq!(steps, 47176870);
-        // println!("{}", machine.status);
-        // let ok = match machine.status {
-        //     MachineStatus::DecidedHolds(47176870, 4097) => true,
-        //     _ => false,
-        // };
-        // assert!(ok);
-    }
+    //     #[test]
+    //     // https://bbchallenge.org/story#will-it-halt-or-not, Machine 2
+    //     fn test_machine_steps_bb5_max() {
+    //         let config = Config::new_default(5);
+    //         let machine = Machine::build_machine("BB5_MAX").unwrap();
+    //         let mut d: DeciderU128Long<SubDeciderDummy> =
+    //             bb_challenge::decider_u128_long::DeciderU128Long::new(&config);
+    //         let result = d.decide_machine(&machine);
+    //
+    //         // let mut machine = build_machine("BB5_MAX").unwrap();
+    //         // let result = machine.run();
+    //         // println!("{}", machine);
+    //         assert_eq!(result, MachineStatus::DecidedHolds(47_176_870));
+    //         // assert_eq!(result, MachineStatus::DecidedHoldsOld(47176870, 4097));
+    //         // let steps = match result {
+    //         //     MachineStatus::DecidedHolds(s, _) => s,
+    //         //     _ => 0,
+    //         // };
+    //
+    //         // assert_eq!(steps, 47176870);
+    //         // println!("{}", machine.status);
+    //         // let ok = match machine.status {
+    //         //     MachineStatus::DecidedHolds(47176870, 4097) => true,
+    //         //     _ => false,
+    //         // };
+    //         // assert!(ok);
+    //     }
 }

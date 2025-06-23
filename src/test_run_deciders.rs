@@ -7,7 +7,7 @@ use bb_challenge::{
     generator_full::GeneratorFull,
     machine::Machine,
     reporter::Reporter,
-    result::{DurationGenerator, ResultDecider},
+    result::{DurationDataProvider, ResultDecider},
     status::{MachineStatus, UndecidedReason},
 };
 
@@ -21,7 +21,7 @@ pub const PRINT_UNDECIDED_MACHINES: usize = 3;
 pub fn run_generator_pre_deciders(config: &Config) -> ResultDecider {
     let start = std::time::Instant::now();
     let mut generator = GeneratorFull::new(config);
-    let mut result = ResultDecider::new(config.n_states(), 0);
+    let mut result = ResultDecider::new_deprecated(config.n_states(), 0);
     result.name = "Pre Deciders New".to_string();
     let mut duration_decider = Duration::new(0, 0);
     let mut reporter = Reporter::default();
@@ -40,8 +40,8 @@ pub fn run_generator_pre_deciders(config: &Config) -> ResultDecider {
             break;
         }
     }
-    result.duration = DurationGenerator {
-        duration_generator: Default::default(),
+    result.duration = DurationDataProvider {
+        duration_data_provider: Default::default(),
         duration_decider,
         duration_total: start.elapsed(),
     };
@@ -64,7 +64,7 @@ fn pre_deciders_batch(
     for machine in permutations.iter() {
         // machine.change_permutation(permutation);
         // let _ = machine.run();
-        let mut status = bb_challenge::pre_deciders::run_pre_deciders(&machine.transition_table());
+        let mut status = bb_challenge::pre_decider::run_pre_decider(&machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
@@ -110,7 +110,7 @@ fn pre_deciders_batch(
 pub fn run_generator_pre_deciders_undecided(config: &Config) -> ResultDecider {
     let start = std::time::Instant::now();
     let mut generator = GeneratorFull::new(config);
-    let mut result = ResultDecider::new(config.n_states(), 0);
+    let mut result = ResultDecider::new_deprecated(config.n_states(), 0);
     result.name = "Pre Deciders Undecided New".to_string();
     let mut duration_decider = Duration::new(0, 0);
     let mut reporter = Reporter::default();
@@ -130,8 +130,8 @@ pub fn run_generator_pre_deciders_undecided(config: &Config) -> ResultDecider {
             break;
         }
     }
-    result.duration = DurationGenerator {
-        duration_generator: Default::default(),
+    result.duration = DurationDataProvider {
+        duration_data_provider: Default::default(),
         duration_decider,
         duration_total: start.elapsed(),
     };
@@ -154,7 +154,7 @@ fn pre_deciders_batch_undecided(
     for machine in permutations.iter() {
         // machine.change_permutation(machine);
         // let _ = machine.run();
-        let status = bb_challenge::pre_deciders::run_pre_deciders(&machine.transition_table());
+        let status = bb_challenge::pre_decider::run_pre_decider(&machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
