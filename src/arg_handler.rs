@@ -30,7 +30,7 @@ pub fn standard_args(args: &[String]) -> ArgValue {
     match args.len() {
         2 => match args[1].as_str() {
             "--rewrite" => {
-                BBFileReader::rewrite_file(FILE_PATH).unwrap();
+                BBFileReader::rewrite_file_to_compact_format(FILE_PATH).unwrap();
             }
             _ => unknown_args = true,
         },

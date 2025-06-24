@@ -3,11 +3,12 @@ use std::time::Duration;
 
 use bb_challenge::{
     config::Config,
+    decider_result::{DeciderResultStats, DurationDataProvider},
     generator::Generator,
     generator_full::GeneratorFull,
     machine::Machine,
+    pre_decider::PreDeciderRun,
     reporter::Reporter,
-    result::{DurationDataProvider, ResultDecider},
     status::{MachineStatus, UndecidedReason},
 };
 
@@ -18,10 +19,10 @@ pub const PRINT_UNDECIDED_MACHINES: usize = 3;
 /// BB4: 'Pre Deciders New' time elapsed for run with 100,000,000 machines: 1722.79 ms, with generation: 3656.469 ms. (ResultLarge)
 /// BB4: 'Pre Deciders New' time elapsed for run with 100,000,000 machines: 1420.561 ms, with generation: 3361.721 ms. (ResultSmall)
 /// One third of the time is used for resulct update. See .._undecided.
-pub fn run_generator_pre_deciders(config: &Config) -> ResultDecider {
+pub fn run_generator_pre_deciders(config: &Config) -> DeciderResultStats {
     let start = std::time::Instant::now();
     let mut generator = GeneratorFull::new(config);
-    let mut result = ResultDecider::new_deprecated(config.n_states(), 0);
+    let mut result = DeciderResultStats::new_deprecated(config.n_states(), 0);
     result.name = "Pre Deciders New".to_string();
     let mut duration_decider = Duration::new(0, 0);
     let mut reporter = Reporter::default();
@@ -51,7 +52,7 @@ pub fn run_generator_pre_deciders(config: &Config) -> ResultDecider {
 
 fn pre_deciders_batch(
     permutations: &[Machine],
-    result: &mut ResultDecider,
+    result: &mut DeciderResultStats,
     // info on total package size for % calculation
     // total_to_check: u64,
     // reporter: &mut Reporter,
@@ -64,7 +65,8 @@ fn pre_deciders_batch(
     for machine in permutations.iter() {
         // machine.change_permutation(permutation);
         // let _ = machine.run();
-        let mut status = bb_challenge::pre_decider::run_pre_decider(&machine.transition_table());
+        let mut status =
+            bb_challenge::pre_decider::run_pre_decider_strict(&machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
@@ -107,10 +109,10 @@ fn pre_deciders_batch(
 /// The only difference is the result detail. This just counts up the undecided counter instead of making a full evaluation of the result.
 /// It is build to check the statistics of the decider and also make a performance evaluation.
 /// BB4: 'Pre Deciders New Undecided' time elapsed for run with 100,000,000 machines: 1264.743 ms, with generation: 3166.068 ms.
-pub fn run_generator_pre_deciders_undecided(config: &Config) -> ResultDecider {
+pub fn run_generator_pre_deciders_undecided(config: &Config) -> DeciderResultStats {
     let start = std::time::Instant::now();
     let mut generator = GeneratorFull::new(config);
-    let mut result = ResultDecider::new_deprecated(config.n_states(), 0);
+    let mut result = DeciderResultStats::new_deprecated(config.n_states(), 0);
     result.name = "Pre Deciders Undecided New".to_string();
     let mut duration_decider = Duration::new(0, 0);
     let mut reporter = Reporter::default();
@@ -141,7 +143,7 @@ pub fn run_generator_pre_deciders_undecided(config: &Config) -> ResultDecider {
 
 fn pre_deciders_batch_undecided(
     permutations: &[Machine],
-    result: &mut ResultDecider,
+    result: &mut DeciderResultStats,
     // info on total package size for % calculation
     total_to_check: u64,
     reporter: &mut Reporter,
@@ -154,7 +156,7 @@ fn pre_deciders_batch_undecided(
     for machine in permutations.iter() {
         // machine.change_permutation(machine);
         // let _ = machine.run();
-        let status = bb_challenge::pre_decider::run_pre_decider(&machine.transition_table());
+        let status = bb_challenge::pre_decider::run_pre_decider_strict(&machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);

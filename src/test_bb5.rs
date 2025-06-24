@@ -3,6 +3,7 @@ use bb_challenge::{
     decider::{self, Decider},
     decider_loop_v4::{DeciderLoopV4, STEP_LIMIT_DECIDER_LOOP},
     generator_reduced::GeneratorReduced,
+    pre_decider::PreDeciderRun,
 };
 
 pub struct DeciderBB5;
@@ -28,15 +29,22 @@ impl Decider for DeciderBB5 {
         //         result
     }
 
-    fn name(&self) -> String {
-        "Decider BB5".to_string()
+    fn name(&self) -> &str {
+        "Decider BB5"
     }
 
     fn decider_run_batch(
         machines: &[bb_challenge::machine::Machine],
-        run_predecider: bool,
+        run_predecider: PreDeciderRun,
         config: &bb_challenge::config::Config,
-    ) -> Option<bb_challenge::result::BatchResult> {
+    ) -> Option<bb_challenge::decider_result::BatchResult> {
+        todo!()
+    }
+
+    fn decide_single_machine(
+        machine: &bb_challenge::machine::Machine,
+        config: &bb_challenge::config::Config,
+    ) -> bb_challenge::status::MachineStatus {
         todo!()
     }
 }
