@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use bb_challenge::{
     config::Config,
+    data_provider::DataProvider,
     decider_result::{DeciderResultStats, DurationDataProvider},
     generator::Generator,
     generator_full::GeneratorFull,
@@ -18,14 +19,14 @@ pub const PRINT_UNDECIDED_MACHINES: usize = 3;
 /// It is build to check the statistics of the decider and also make a performance evaluation.
 /// BB4: 'Pre Deciders New' time elapsed for run with 100,000,000 machines: 1722.79 ms, with generation: 3656.469 ms. (ResultLarge)
 /// BB4: 'Pre Deciders New' time elapsed for run with 100,000,000 machines: 1420.561 ms, with generation: 3361.721 ms. (ResultSmall)
-/// One third of the time is used for resulct update. See .._undecided.
+/// One third of the time is used for result update. See .._undecided.
 pub fn run_generator_pre_deciders(config: &Config) -> DeciderResultStats {
     let start = std::time::Instant::now();
     let mut generator = GeneratorFull::new(config);
-    let mut result = DeciderResultStats::new_deprecated(config.n_states(), 0);
-    result.name = "Pre Deciders New".to_string();
+    let mut result = DeciderResultStats::new(config);
+    result.set_name("Pre Deciders New".to_string());
     let mut duration_decider = Duration::new(0, 0);
-    let mut reporter = Reporter::default();
+    let mut reporter = Reporter::new_default(generator.num_machines_total());
     // let mut append = false;
     loop {
         let (permutations, is_last_batch) = generator.generate_permutation_batch_next();
@@ -33,7 +34,7 @@ pub fn run_generator_pre_deciders(config: &Config) -> DeciderResultStats {
         duration_decider += d;
 
         if reporter.is_due_progress() {
-            reporter.report(result.num_checked_total(), generator.limit(), &result);
+            reporter.report_stats(result.num_processed_total(), &result);
         }
 
         // println!("last id {}", permutations.last().unwrap());
@@ -66,7 +67,7 @@ fn pre_deciders_batch(
         // machine.change_permutation(permutation);
         // let _ = machine.run();
         let mut status =
-            bb_challenge::pre_decider::run_pre_decider_strict(&machine.transition_table());
+            bb_challenge::pre_decider::run_pre_decider_strict(machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
@@ -76,7 +77,7 @@ fn pre_deciders_batch(
             status = MachineStatus::Undecided(UndecidedReason::DeciderNoResult, 0, 0);
         }
 
-        result.add(&machine, &status);
+        result.add(machine, &status);
         // // only check every 1000 machines, otherwise this takes half the time
         // if machine.id() & 1023 == 0 && reporter.is_due_progress() {
         //     let mio = (result.num_checked as f64 / 100_000.0).round() / 10.0;
@@ -112,10 +113,10 @@ fn pre_deciders_batch(
 pub fn run_generator_pre_deciders_undecided(config: &Config) -> DeciderResultStats {
     let start = std::time::Instant::now();
     let mut generator = GeneratorFull::new(config);
-    let mut result = DeciderResultStats::new_deprecated(config.n_states(), 0);
-    result.name = "Pre Deciders Undecided New".to_string();
+    let mut result = DeciderResultStats::new(config);
+    result.set_name("Pre Deciders Undecided New".to_string());
     let mut duration_decider = Duration::new(0, 0);
-    let mut reporter = Reporter::default();
+    let mut reporter = Reporter::new_default(generator.num_machines_total());
     // let mut append = false;
     loop {
         let (permutations, is_last_batch) = generator.generate_permutation_batch_next();
@@ -156,7 +157,7 @@ fn pre_deciders_batch_undecided(
     for machine in permutations.iter() {
         // machine.change_permutation(machine);
         // let _ = machine.run();
-        let status = bb_challenge::pre_decider::run_pre_decider_strict(&machine.transition_table());
+        let status = bb_challenge::pre_decider::run_pre_decider_strict(machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);

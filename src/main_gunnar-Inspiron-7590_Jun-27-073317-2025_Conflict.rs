@@ -20,8 +20,8 @@ use bb_challenge::{
     data_provider::DataProvider,
     decider::{self, Decider, DeciderEnum, DeciderMinimal},
     decider_bouncer::DeciderBouncer,
-    decider_cycler_v4::DeciderCyclerV4,
     decider_hold_u128_long::DeciderHoldU128Long,
+    decider_loop_v4::{DeciderLoopV4, STEP_LIMIT_DECIDER_LOOP},
     decider_result::{BatchResult, DeciderResultStats},
     decider_result_worker::{self, no_worker},
     generator::Generator,
@@ -42,7 +42,7 @@ use busy_beaver::{
 // use test_machines::run_machine;
 // use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
 
-// TODO DeciderConfig
+// TODO Config as ref
 // TODO review bb_challenge article
 // TODO status increasing pre-decider
 //  Machine No.   191,658,921: 1RB1LB_1LA0LC_---1LD_1RD0RA
@@ -50,12 +50,13 @@ use busy_beaver::{
 // TODO check pre-decider not all states used: can we eliminate when following start and level, e.g. A->B B->A,B => C never reached
 // TODO threaded: undefined and worker
 // TODO threaded: atomic update save
+// TODO threaded: Why not just have x gen packs ready and then skip producing them?
 // TODO threaded: recycle threads
 // TODO threaded: Why so slow under windows?
 
 #[allow(unused)]
 fn test_run_decider(config: &Config) {
-    let f_decider = DeciderCyclerV4::decider_run_batch;
+    let f_decider = DeciderLoopV4::decider_run_batch;
     // let f_result_worker = decider_result_worker::save_machines_undecided;
     let f_result_worker = decider_result_worker::no_worker;
     // let generator = GeneratorFull::new(&config);
@@ -66,14 +67,13 @@ fn test_run_decider(config: &Config) {
     //     config,
     //     &f_result_worker,
     // );
-    println!("Config: {}", config);
     let result =
         decider::run_decider_data_provider_threaded(f_decider, generator, config, &f_result_worker);
     println!("{}", result.to_string_with_duration());
 }
 
 #[allow(unused)]
-fn test_run_multiple_decider<F>(config: &Config, fs_decider: &[F], multi_core: bool)
+fn test_run_multiple_decider<F>(config: &Config, fs_decider: &[F])
 where
     F: Fn(&[Machine], PreDeciderRun, &Config) -> Option<BatchResult> + Send + Copy + 'static,
 {
@@ -82,22 +82,18 @@ where
 
     // let generator = GeneratorFull::new(&config);
     let generator = GeneratorReduced::new(config);
-    let result = if multi_core {
-        decider::run_decider_chain_data_provider_threaded(
-            fs_decider,
-            generator,
-            config,
-            &f_result_worker,
-        )
-    } else {
-        decider::run_decider_chain_data_provider_single_thread(
-            &fs_decider,
-            generator,
-            &config,
-            &f_result_worker,
-        )
-    };
-    println!("Config: {}", config);
+    // let result = decider::run_decider_chain_data_provider_single_thread(
+    //     &fs,
+    //     generator,
+    //     &config,
+    //     &f_result_worker,
+    // );
+    let result = decider::run_decider_chain_data_provider_threaded(
+        fs_decider,
+        generator,
+        config,
+        &f_result_worker,
+    );
     println!("{}", result.to_string_with_duration());
 }
 
@@ -117,24 +113,24 @@ fn test_run_multiple_decider_v2(config: &Config, e_deciders: &[DeciderEnum]) {
     let machine = Machine::build_machine("BB4_MAX").unwrap();
     let mut status = MachineStatus::NoDecision;
     for e in e_deciders {
-        // match e {
-        // DeciderEnum::PreDecider(decider) => {
-        //     let d = decider.as_mut();
-        //     // let mut d = decider.new_from_self(&config);
-        //     status = d.decide_machine(&machine);
-        // }
-        // DeciderEnum::LoopV4(d) => {
-        //     // let mut d = decider.new_from_self(&config);
-        //     status = d.decide_machine(&machine);
-        // }
-        // DeciderEnum::HoldLong(d) => {
-        //     // let mut d = decider.new_from_self(&config);
-        //     status = d.decide_machine(&machine);
-        // }
-        // };
+        match e {
+            DeciderEnum::PreDecider(decider) => {
+                let d = decider.as_mut();
+                // let mut d = decider.new_from_self(&config);
+                status = d.decide_machine(&machine);
+            }
+            DeciderEnum::LoopV4(d) => {
+                // let mut d = decider.new_from_self(&config);
+                status = d.decide_machine(&machine);
+            }
+            DeciderEnum::HoldLong(d) => {
+                // let mut d = decider.new_from_self(&config);
+                status = d.decide_machine(&machine);
+            }
+        };
         match status {
-            // MachineStatus::NoDecision => {}
-            // MachineStatus::Undecided(_, _, _) => {}
+            MachineStatus::NoDecision => {}
+            MachineStatus::Undecided(_, _, _) => {}
             _ => break,
         }
     }
@@ -144,7 +140,6 @@ fn test_run_multiple_decider_v2(config: &Config, e_deciders: &[DeciderEnum]) {
     //     config,
     //     &f_result_worker,
     // );
-    println!("Config: {}", config);
     // println!("{}", result.to_string_with_duration());
 }
 
@@ -156,7 +151,7 @@ where
     let r = BBFileDataProviderBuilder::new()
         .id_range(config.file_id_range())
         .batch_size(200)
-        .build();
+        .build(config);
     let mut bb_file_reader;
     match r {
         Ok(f) => bb_file_reader = f,
@@ -169,7 +164,7 @@ where
     // let r = bb_file_reader.machine_batch_next();
     // println!("machines: {}", r.machines.len());
 
-    let f_decider = DeciderCyclerV4::decider_run_batch;
+    let f_decider = DeciderLoopV4::decider_run_batch;
     let f_result_worker = decider_result_worker::save_machines_undecided;
     let f_result_worker = decider_result_worker::no_worker;
     // let result = decider::run_decider_chain_data_provider_single_thread(
@@ -184,7 +179,6 @@ where
         config,
         &f_result_worker,
     );
-    println!("Config: {}", config);
     println!("{}", result.to_string_with_duration());
 }
 
@@ -204,23 +198,20 @@ fn main() {
     // TODO what is the issue after 409_975_399?
     #[allow(unused)]
     if args.len() < 2 {
-        let config = Config::builder(4)
+        let config = Config::builder(5)
             // 10_000_000_000 for BB4
-            .machine_limit(10_000_000_000)
-            .step_limit_cycler(300)
-            // .step_limit_bouncer(50_000)
+            .generate_limit(100_000_000_000)
             .file_id_range(0..1_000_000)
             // .generator_batch_size_request_full(5_000_000)
             // .generator_batch_size_request_reduced(10_000_000)
             // .limit_machines_undecided(20)
             .cpu_utilization(100)
             .build();
-        println!("Config: {}", config);
 
         // Decider
         let fs = vec![
-            DeciderCyclerV4::decider_run_batch,
-            // DeciderBouncer::decider_run_batch,
+            DeciderLoopV4::decider_run_batch,
+            DeciderBouncer::decider_run_batch,
             // DeciderHoldU128Long::decider_run_batch,
         ];
         // let deciders = vec![
@@ -228,19 +219,19 @@ fn main() {
         //     // DeciderBouncer::new(&config),
         //     // DeciderHoldU128Long::decider_run_batch,
         // ];
-        //         let dp = Box::new(PreDecider);
-        //         let dl = Box::new(DeciderLoopV4::new(config.step_limit_cycler()));
-        //         let db = Box::new(DeciderBouncer::new(&config));
-        //         let deciders: Vec<Box<dyn DeciderMinimal>> = vec![dp, dl];
-        //
-        //         let ep = DeciderEnum::PreDecider(Box::new(PreDecider));
-        //         let el = DeciderEnum::LoopV4(Box::new(DeciderLoopV4::new(100)));
-        //         let e_deciders = vec![ep, el];
-        //         test_run_multiple_decider_v2(&config, &e_deciders);
+        let dp = Box::new(PreDecider);
+        let dl = Box::new(DeciderLoopV4::new(config.step_limit_cycler()));
+        let db = Box::new(DeciderBouncer::new(&config));
+        let deciders: Vec<Box<dyn DeciderMinimal>> = vec![dp, dl];
+
+        let ep = DeciderEnum::PreDecider(Box::new(PreDecider));
+        let el = DeciderEnum::LoopV4(Box::new(DeciderLoopV4::new(100)));
+        let e_deciders = vec![ep, el];
+        test_run_multiple_decider_v2(&config, &e_deciders);
 
         // test_run_decider(&config);
-        test_run_multiple_decider(&config, &fs, false);
-        // test_file_read(&config, &fs);
+        // test_run_multiple_decider(&config, &fs);
+        test_file_read(&config, &fs);
 
         // let config = Config::builder(3).generate_limit(350_000_000).build();
         // // decider loop V4 for BB4
@@ -381,7 +372,7 @@ fn main() {
 
 fn bench_generate_reduced(n_states: usize, generate_limit: u64) {
     let config = Config::builder(n_states)
-        .machine_limit(generate_limit)
+        .generate_limit(generate_limit)
         .build();
     let mut generator = bb_challenge::generator_reduced::GeneratorReduced::new(&config);
 

@@ -1,20 +1,20 @@
 // This lib only exists to allow criterion tests.
 
+use bb_challenge::config::StepTypeBig;
+
 pub mod test_run_deciders;
 
 // use std::time::Duration;
 
 // #[cfg(debug_assertions)]
 // use bb_challenge::status::EndlessReason;
-use bb_challenge::StepType;
 
-pub const FILE_PATH: &str = "res/all_5_states_undecided_machines_with_global_header";
 // const FILE_PATH: &str = "res/seed_test_file";
 /// Limit generation, 0 for number of touring machines
 pub const GENERATOR_LIMIT: u64 = 50_000_000;
 pub const GENERATOR_BATCH_SIZE_REQUEST: usize = 10_000_000; // GENERATOR_BATCH_SIZE_RECOMMENDATION;
 pub const N_STATES: usize = 4;
-pub const STEP_LIMIT: StepType = 110; // 50_000_000;
+pub const STEP_LIMIT: StepTypeBig = 110; // 50_000_000;
 pub const TAPE_SIZE_LIMIT: usize = 20000;
 pub const USE_CPU_PERCENT: usize = 100;
 

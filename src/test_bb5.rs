@@ -1,7 +1,7 @@
 #![allow(unused)]
 use bb_challenge::{
     decider::{self, Decider},
-    decider_loop_v4::{DeciderLoopV4, STEP_LIMIT_DECIDER_LOOP},
+    decider_cycler_v4::DeciderCyclerV4,
     generator_reduced::GeneratorReduced,
     pre_decider::PreDeciderRun,
 };
@@ -9,10 +9,6 @@ use bb_challenge::{
 pub struct DeciderBB5;
 
 impl Decider for DeciderBB5 {
-    fn new_decider(&self) -> Self {
-        todo!()
-    }
-
     fn decide_machine(
         &mut self,
         machine: &bb_challenge::machine::Machine,
@@ -47,4 +43,8 @@ impl Decider for DeciderBB5 {
     ) -> bb_challenge::status::MachineStatus {
         todo!()
     }
+
+    // fn new_from_self(&self) -> Self {
+    //     todo!()
+    // }
 }
