@@ -44,6 +44,17 @@ impl Decider for DeciderBB5 {
         todo!()
     }
 
+    fn id(&self) -> usize {
+        todo!()
+    }
+
+    fn decider_run_batch_v2<'a>(
+        machines: &[bb_challenge::machine::Machine],
+        batch_data: &'a bb_challenge::decider_result::BatchData,
+    ) -> bb_challenge::pre_decider_v2::ResultBatchV2<'a> {
+        todo!()
+    }
+
     // fn new_from_self(&self) -> Self {
     //     todo!()
     // }
