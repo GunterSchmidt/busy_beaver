@@ -129,20 +129,21 @@ fn main() {
         // test_single_thread_worker();
         // return;
 
-        let n_states = 5;
+        let n_states = 4;
         let decider_last = 1;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
-            .machine_limit(100_000_000_000)
+            .machine_limit(100_000_000)
             .step_limit_hold(1000)
             .step_limit_cycler(500)
             .step_limit_bouncer(200)
-            // .limit_machines_decided(100_000)
-            // .limit_machines_undecided(100)
+            .limit_machines_decided(100_000)
+            .limit_machines_undecided(100)
             // .file_id_range(0..1_000_000)
             // .generator_batch_size_request_full(5_000_000)
             // .generator_reduced_batch_size_request(100_000)
             // .limit_machines_undecided(20)
+            // .write_html_file(true)
             .cpu_utilization(100)
             .build();
         println!("Config 1: {}", config_1);
@@ -157,9 +158,12 @@ fn main() {
 
         let decider_configs = build_decider_config(&config_1, &config_2);
 
-        let result =
-            test_run_multiple_decider_v2(&decider_configs[0..decider_last], MultiCore::MultiCore);
-        // let result = test_file_read_v2(&decider_config, 1);
+        // let result =
+        //     test_run_multiple_decider_v2(&decider_configs[0..decider_last], MultiCore::MultiCore);
+        let result = test_file_read_v2(
+            &decider_configs[0..decider_last],
+            MultiCore::GeneratorSingleCoreDeciderMultiCore,
+        );
 
         let mut names = Vec::new();
         for d in decider_configs[0..decider_last].iter() {
@@ -329,7 +333,10 @@ fn test_run_multiple_decider_v2(
     result
 }
 
-fn test_file_read_v2(decider_config: &[DeciderConfig], multi_core: usize) -> DeciderResultStats {
+fn test_file_read_v2(
+    decider_config: &[DeciderConfig],
+    multi_core: MultiCore,
+) -> DeciderResultStats {
     let first_config = decider_config.first().unwrap().config();
     let r = BBFileDataProviderBuilder::new()
         .id_range(first_config.file_id_range())
@@ -347,8 +354,12 @@ fn test_file_read_v2(decider_config: &[DeciderConfig], multi_core: usize) -> Dec
     // println!("machines: {}", r.machines.len());
 
     match multi_core {
-        0 => run_decider_chain_data_provider_single_thread(decider_config, bb_file_reader),
-        1 => run_decider_chain_threaded_data_provider_single_thread(decider_config, bb_file_reader),
+        MultiCore::SingleCore => {
+            run_decider_chain_data_provider_single_thread(decider_config, bb_file_reader)
+        }
+        MultiCore::GeneratorSingleCoreDeciderMultiCore => {
+            run_decider_chain_threaded_data_provider_single_thread(decider_config, bb_file_reader)
+        }
         // 2 => run_decider_chain_threaded_data_provider_multi_thread(decider_config, bb_file_reader),
         _ => panic!("use 0: single, 1: multi with single generator, 2: multi not allowed"),
     }

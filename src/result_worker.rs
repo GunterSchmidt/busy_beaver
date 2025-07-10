@@ -8,12 +8,12 @@ use bb_challenge::{
 };
 
 const MIN_STEPS_HTML: StepTypeSmall = 50;
-const MAX_FILES_PER_BATCH: usize = 1_000;
+const MAX_FILES_PER_BATCH: usize = 10;
 
+/// requires config:
+/// * .write_html_file: false, or all files will be written
+/// * .limit_machines_decided(100_000) or any other reasonable number
 pub fn cycler_html_filter(batch_data: &mut BatchData) -> ResultWorker {
-    if !batch_data.config.write_html_file() {
-        return Ok(());
-    }
     let mut counter = 0;
     let config_html = Config::builder_from_config(batch_data.config)
         .write_html_file(true)
