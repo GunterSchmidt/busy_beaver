@@ -53,9 +53,10 @@ use busy_beaver::{
     GENERATOR_BATCH_SIZE_REQUEST, GENERATOR_LIMIT, N_STATES, STEP_LIMIT, TAPE_SIZE_LIMIT,
 };
 
+#[allow(clippy::enum_variant_names)]
 enum MultiCore {
     SingleCore,
-    GeneratorSingleCoreDeciderMultiCore,
+    SingleCoreGeneratorMultiCoreDecider,
     MultiCore,
 }
 
@@ -162,7 +163,7 @@ fn main() {
         //     test_run_multiple_decider_v2(&decider_configs[0..decider_last], MultiCore::MultiCore);
         let result = test_file_read_v2(
             &decider_configs[0..decider_last],
-            MultiCore::GeneratorSingleCoreDeciderMultiCore,
+            MultiCore::SingleCoreGeneratorMultiCoreDecider,
         );
 
         let mut names = Vec::new();
@@ -230,7 +231,7 @@ fn main() {
         // bb_challenge::decider_hold::test_decider_hold_u128_long_applies_bb5_max();
         // bb_challenge::decider_u128::test_decider_hold_u128_applies_not_bb5_max();
         // bb_challenge::decider_u128_long::test_decider_hold_u128_applies_bb5_max();
-        return;
+        // return;
 
         // let mut machine = build_machine("BB5_S107").unwrap();
         // let mut machine = build_machine("BB4_MAX_V2").unwrap();
@@ -278,7 +279,7 @@ fn main() {
                 .step_limit_hold(1000)
                 .write_html_file(true)
                 .build();
-            let res = pre_decider::run_pre_decider_simple(&machine.transition_table());
+            let res = pre_decider::run_pre_decider_simple(machine.transition_table());
             if res == MachineStatus::NoDecision {
                 let res = DeciderHoldU128Long::decide_single_machine(&machine, &config);
                 let res = DeciderCyclerV4::decide_single_machine(&machine, &config);
@@ -317,20 +318,18 @@ fn test_run_multiple_decider_v2(
 
     // let generator = GeneratorFull::new(first_config);
     let generator = GeneratorReduced::new(first_config);
-    let result = match multi_core {
+    match multi_core {
         MultiCore::SingleCore => {
             run_decider_chain_data_provider_single_thread(decider_config, generator)
         }
-        MultiCore::GeneratorSingleCoreDeciderMultiCore => {
+        MultiCore::SingleCoreGeneratorMultiCoreDecider => {
             run_decider_chain_threaded_data_provider_single_thread(decider_config, generator)
         }
         MultiCore::MultiCore => {
             run_decider_chain_threaded_data_provider_multi_thread(decider_config, generator)
         }
         _ => panic!("use 0: single, 1: multi with single generator, 2: multi"),
-    };
-
-    result
+    }
 }
 
 fn test_file_read_v2(
@@ -357,7 +356,7 @@ fn test_file_read_v2(
         MultiCore::SingleCore => {
             run_decider_chain_data_provider_single_thread(decider_config, bb_file_reader)
         }
-        MultiCore::GeneratorSingleCoreDeciderMultiCore => {
+        MultiCore::SingleCoreGeneratorMultiCoreDecider => {
             run_decider_chain_threaded_data_provider_single_thread(decider_config, bb_file_reader)
         }
         // 2 => run_decider_chain_threaded_data_provider_multi_thread(decider_config, bb_file_reader),

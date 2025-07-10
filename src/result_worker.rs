@@ -19,35 +19,23 @@ pub fn cycler_html_filter(batch_data: &mut BatchData) -> ResultWorker {
         .write_html_file(true)
         .build();
     for (i, status) in batch_data.machines_decided.states.iter().enumerate() {
-        match status {
-            bb_challenge::status::MachineStatus::DecidedEndless(endless_reason) => {
-                match endless_reason {
-                    bb_challenge::status::EndlessReason::Cycle(steps, _) => {
-                        if *steps > MIN_STEPS_HTML {
-                            let machine = batch_data.machines_decided.machines[i];
-                            let mi = MachineInfo::new(
-                                machine.id(),
-                                *machine.transition_table(),
-                                *status,
-                            );
-                            println!("Cycler Html: {mi}");
-                            decider_cycler_v4::DeciderCyclerV4::decide_single_machine(
-                                &machine,
-                                &config_html,
-                            );
-                            counter += 1;
-                            if counter == MAX_FILES_PER_BATCH {
-                                return Err(EndReason::StopRequested(
-                                    0,
-                                    "Found enough examples".to_string(),
-                                ));
-                            }
-                        }
-                    }
-                    _ => {}
+        if let bb_challenge::status::MachineStatus::DecidedEndless(
+            bb_challenge::status::EndlessReason::Cycle(steps, _),
+        ) = status
+        {
+            if *steps > MIN_STEPS_HTML {
+                let machine = batch_data.machines_decided.machines[i];
+                let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
+                println!("Cycler Html: {mi}");
+                decider_cycler_v4::DeciderCyclerV4::decide_single_machine(&machine, &config_html);
+                counter += 1;
+                if counter == MAX_FILES_PER_BATCH {
+                    return Err(EndReason::StopRequested(
+                        0,
+                        "Found enough examples".to_string(),
+                    ));
                 }
             }
-            _ => {}
         }
     }
 
