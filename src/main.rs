@@ -21,10 +21,8 @@ use bb_challenge::{
     bb_file_reader::{BBFileDataProviderBuilder, BBFileReader},
     config::{self, Config},
     data_provider::DataProvider,
-    data_provider_threaded::DataProviderThreaded,
     decider::{self, Decider, DeciderConfig, DeciderStandard},
     decider_bouncer::DeciderBouncer,
-    decider_cycler_v4::DeciderCyclerV4,
     decider_engine::{
         run_decider_chain_data_provider_single_thread,
         run_decider_chain_data_provider_single_thread_reporting,
@@ -46,6 +44,7 @@ use bb_challenge::{
     single_thread_worker::SingleThreadWorker,
     status::MachineStatus,
     transition_symbol2::TransitionTableSymbol2,
+    Cores,
 };
 
 use busy_beaver::{
@@ -53,24 +52,16 @@ use busy_beaver::{
     GENERATOR_BATCH_SIZE_REQUEST, GENERATOR_LIMIT, N_STATES, STEP_LIMIT, TAPE_SIZE_LIMIT,
 };
 
-#[allow(clippy::enum_variant_names)]
-enum MultiCore {
-    SingleCore,
-    SingleCoreGeneratorMultiCoreDecider,
-    MultiCore,
-}
-
 // use test_machines::run_machine;
 // use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
 
-// TODO generator backwards
+// TODO HTML Table
 // TODO Worker as single thread
-// TODO Decider long as print and save to file to see how the machine behaves.
 // TODO review bb_challenge article
 // TODO status increasing pre-decider
 //  Machine No.   191,658,921: 1RB1LB_1LA0LC_---1LD_1RD0RA
 //    Machine No. 5,721,093,031: 1RB1LB_1LA0LD_1RC0RA_---1LC
-// TODO check pre-decider not all states used: can we eliminate when following start and level, e.g. A->B B->A,B => C never reached
+// TODO generator backwards?
 // TODO threaded: undefined and worker
 // TODO threaded: atomic update save
 // TODO threaded: recycle threads / thread pool
@@ -127,18 +118,27 @@ fn main() {
     // No arguments
     // Done: what is the issue after 409_975_399?
     if args.len() < 2 {
+        let start = std::time::Instant::now();
         // test_single_thread_worker();
-        // return;
+        bb_challenge::decider_hold_u128_long::test_decider_hold_u128_applies_bb5_max();
+        let duration = start.elapsed();
+        println!("Duration: {duration:?}");
+        let start = std::time::Instant::now();
+        // test_single_thread_worker();
+        bb_challenge::decider_hold_u128_long_v2::test_decider_hold_u128_applies_bb5_max();
+        let duration = start.elapsed();
+        println!("Duration: {duration:?}");
+        return;
 
-        let n_states = 4;
+        let n_states = 5;
         let decider_last = 1;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
-            .machine_limit(100_000_000)
+            .machine_limit(100_500_000_000)
             .step_limit_hold(1000)
-            .step_limit_cycler(500)
+            .step_limit_cycler(1500)
             .step_limit_bouncer(200)
-            .limit_machines_decided(100_000)
+            // .limit_machines_decided(100_000)
             .limit_machines_undecided(100)
             // .file_id_range(0..1_000_000)
             // .generator_batch_size_request_full(5_000_000)
@@ -147,24 +147,36 @@ fn main() {
             // .write_html_file(true)
             .cpu_utilization(100)
             .build();
-        println!("Config 1: {}", config_1);
+        println!("Config 1: {config_1}");
         let config_2 = Config::builder_from_config(&config_1)
             // .machine_limit(100_000_000_000)
-            .step_limit_cycler(5_000)
+            .step_limit_cycler(500)
             .step_limit_bouncer(150_000)
+            .limit_machines_decided(100_000)
             // .step_limit_cycler(50_000)
             // .step_limit_bouncer(200_000)
             .build();
-        println!("Config 2: {}", config_2);
+        println!("Config 2: {config_2}");
 
         let decider_configs = build_decider_config(&config_1, &config_2);
 
-        // let result =
-        //     test_run_multiple_decider_v2(&decider_configs[0..decider_last], MultiCore::MultiCore);
-        let result = test_file_read_v2(
-            &decider_configs[0..decider_last],
-            MultiCore::SingleCoreGeneratorMultiCoreDecider,
-        );
+        // single machine
+        // let config_single = Config::builder(4).write_html_file(true).build();
+        // let id = 1636268618;
+        // let machine =
+        //     Machine::from_standard_tm_text_format(id, &"1RB0RB_1LC1RA_1RD1LC_---1RB").unwrap();
+        // let ms = bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+        //     &machine,
+        //     &config_single,
+        // );
+        // println!("M {id}: {}", ms);
+        // return;
+
+        let result = test_run_multiple_decider(&decider_configs[0..decider_last], Cores::MultiCore);
+        // let result = test_file_read_v2(
+        //     &decider_configs[0..decider_last],
+        //     MultiCore::SingleCoreGeneratorMultiCoreDecider,
+        // );
 
         let mut names = Vec::new();
         for d in decider_configs[0..decider_last].iter() {
@@ -172,13 +184,13 @@ fn main() {
         }
         println!();
         println!("Decider: {}", names.join(", "));
-        println!("Config 1: {}", config_1);
+        println!("Config 1: {config_1}");
         if decider_last > 2 {
-            println!("Config 2: {}", config_2);
+            println!("Config 2: {config_2}");
         }
         println!("\n{}", result.to_string_with_duration());
 
-        // undecided html
+        // write undecided to html
         if let Some(m_undecided) = result.machines_undecided_sorted() {
             println!(
                 "Writing {} undecided machines to html...",
@@ -188,9 +200,11 @@ fn main() {
                 .write_html_file(true)
                 .build();
             if config.write_html_file() {
-                for m_info in m_undecided.iter() {
+                for m_info in m_undecided.iter().take(1000) {
                     let machine = Machine::from(m_info);
-                    DeciderCyclerV4::decide_single_machine(&machine, &config);
+                    bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+                        &machine, &config,
+                    );
                     DeciderHoldU128Long::decide_single_machine(&machine, &config);
                 }
                 println!("done.");
@@ -261,7 +275,7 @@ fn main() {
                         "This machine has {} symbols and cannot be handled here.",
                         table.dimensions_slow().n_symbols
                     );
-                    println!("{}", table);
+                    println!("{table}");
                 }
             }
             arg_handler::ArgValue::Done => {}
@@ -282,7 +296,9 @@ fn main() {
             let res = pre_decider::run_pre_decider_simple(machine.transition_table());
             if res == MachineStatus::NoDecision {
                 let res = DeciderHoldU128Long::decide_single_machine(&machine, &config);
-                let res = DeciderCyclerV4::decide_single_machine(&machine, &config);
+                let res = bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+                    &machine, &config,
+                );
             }
             println!("Result: {res}");
         }
@@ -293,14 +309,26 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     // Decider
     let mut dc_cycler_1 = DeciderStandard::Cycler.decider_config(config_1);
     dc_cycler_1.fo_result_worker = Some(result_worker::cycler_html_filter);
-    let dc_bouncer_1 = DeciderStandard::Bouncer.decider_config(config_1);
+    // let dc_cycler_1 = DeciderConfig::new(
+    //     bb_challenge::decider_cycler_v5::DeciderCycler::decider_id(),
+    //     bb_challenge::decider_cycler_v5::DeciderCycler::decider_run_batch,
+    //     // result_worker::cycler_html_filter,
+    //     &config_1,
+    // );
+    // let dc_bouncer_1 = DeciderStandard::Bouncer.decider_config(config_1);
     let dc_hold = DeciderStandard::Hold.decider_config(config_1);
-    let dc_cycler_2 = DeciderStandard::Cycler.decider_config(config_2);
+    // let dc_cycler_2 = DeciderStandard::Cycler.decider_config(config_2);
+    let dc_cycler_2 = DeciderConfig::new_with_worker(
+        bb_challenge::decider_cycler_v4::DeciderCycler::decider_id(),
+        bb_challenge::decider_cycler_v4::DeciderCycler::decider_run_batch,
+        result_worker::cycler_html_filter,
+        config_2,
+    );
     let dc_bouncer_2 = DeciderStandard::Bouncer.decider_config(config_2);
 
     let decider_config = vec![
         dc_cycler_1,
-        dc_bouncer_1,
+        // dc_bouncer_1,
         dc_cycler_2,
         dc_bouncer_2,
         dc_hold,
@@ -309,9 +337,9 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     decider_config
 }
 
-fn test_run_multiple_decider_v2(
+fn test_run_multiple_decider(
     decider_config: &[DeciderConfig],
-    multi_core: MultiCore,
+    multi_core: Cores,
 ) -> DeciderResultStats {
     // let f_result_worker = decider_result_worker::no_worker;
     let first_config = decider_config.first().expect("No decider given").config();
@@ -319,23 +347,20 @@ fn test_run_multiple_decider_v2(
     // let generator = GeneratorFull::new(first_config);
     let generator = GeneratorReduced::new(first_config);
     match multi_core {
-        MultiCore::SingleCore => {
+        Cores::SingleCore => {
             run_decider_chain_data_provider_single_thread(decider_config, generator)
         }
-        MultiCore::SingleCoreGeneratorMultiCoreDecider => {
+        Cores::SingleCoreGeneratorMultiCoreDecider => {
             run_decider_chain_threaded_data_provider_single_thread(decider_config, generator)
         }
-        MultiCore::MultiCore => {
+        Cores::MultiCore => {
             run_decider_chain_threaded_data_provider_multi_thread(decider_config, generator)
         }
         _ => panic!("use 0: single, 1: multi with single generator, 2: multi"),
     }
 }
 
-fn test_file_read_v2(
-    decider_config: &[DeciderConfig],
-    multi_core: MultiCore,
-) -> DeciderResultStats {
+fn test_file_read(decider_config: &[DeciderConfig], multi_core: Cores) -> DeciderResultStats {
     let first_config = decider_config.first().unwrap().config();
     let r = BBFileDataProviderBuilder::new()
         .id_range(first_config.file_id_range())
@@ -353,10 +378,10 @@ fn test_file_read_v2(
     // println!("machines: {}", r.machines.len());
 
     match multi_core {
-        MultiCore::SingleCore => {
+        Cores::SingleCore => {
             run_decider_chain_data_provider_single_thread(decider_config, bb_file_reader)
         }
-        MultiCore::SingleCoreGeneratorMultiCoreDecider => {
+        Cores::SingleCoreGeneratorMultiCoreDecider => {
             run_decider_chain_threaded_data_provider_single_thread(decider_config, bb_file_reader)
         }
         // 2 => run_decider_chain_threaded_data_provider_multi_thread(decider_config, bb_file_reader),
@@ -380,7 +405,7 @@ fn bench_generate_reduced(n_states: usize, generate_limit: u64) {
             break;
         }
     }
-    println!("Size Total: {}", p_count);
+    println!("Size Total: {p_count}");
 }
 
 fn show_struct_sizes() {

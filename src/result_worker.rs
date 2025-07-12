@@ -1,14 +1,13 @@
 use bb_challenge::{
     config::{Config, StepTypeSmall},
     decider::Decider,
-    decider_cycler_v4,
     decider_result::{BatchData, EndReason},
     decider_result_worker::ResultWorker,
     machine_info::MachineInfo,
 };
 
-const MIN_STEPS_HTML: StepTypeSmall = 50;
-const MAX_FILES_PER_BATCH: usize = 10;
+const MIN_STEPS_HTML: StepTypeSmall = 0;
+const MAX_FILES_PER_BATCH: usize = 1000;
 
 /// requires config:
 /// * .write_html_file: false, or all files will be written
@@ -27,7 +26,10 @@ pub fn cycler_html_filter(batch_data: &mut BatchData) -> ResultWorker {
                 let machine = batch_data.machines_decided.machines[i];
                 let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
                 println!("Cycler Html: {mi}");
-                decider_cycler_v4::DeciderCyclerV4::decide_single_machine(&machine, &config_html);
+                bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+                    &machine,
+                    &config_html,
+                );
                 counter += 1;
                 if counter == MAX_FILES_PER_BATCH {
                     return Err(EndReason::StopRequested(
