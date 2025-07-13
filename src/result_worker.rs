@@ -26,7 +26,7 @@ pub fn cycler_html_filter(batch_data: &mut BatchData) -> ResultWorker {
                 let machine = batch_data.machines_decided.machines[i];
                 let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
                 println!("Cycler Html: {mi}");
-                bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+                bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
                     &machine,
                     &config_html,
                 );

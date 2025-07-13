@@ -118,31 +118,34 @@ fn main() {
     // No arguments
     // Done: what is the issue after 409_975_399?
     if args.len() < 2 {
-        let start = std::time::Instant::now();
         // test_single_thread_worker();
-        bb_challenge::decider_hold_u128_long::test_decider_hold_u128_applies_bb5_max();
-        let duration = start.elapsed();
-        println!("Duration: {duration:?}");
-        let start = std::time::Instant::now();
-        // test_single_thread_worker();
-        bb_challenge::decider_hold_u128_long_v2::test_decider_hold_u128_applies_bb5_max();
-        let duration = start.elapsed();
-        println!("Duration: {duration:?}");
-        return;
+        // let start = std::time::Instant::now();
+        // bb_challenge::decider_hold_u128_long::test_decider_hold_u128_applies_bb5_max();
+        // let duration = start.elapsed();
+        // println!("Duration: {duration:?}");
+        // let start = std::time::Instant::now();
+        // bb_challenge::decider_hold_u128_long_v2::test_decider_hold_u128_applies_bb5_max();
+        // let duration = start.elapsed();
+        // println!("Duration: {duration:?}");
+        // let start = std::time::Instant::now();
+        // bb_challenge::decider_hold_u128_long_v3::test_decider_hold_u128_applies_bb5_max();
+        // let duration = start.elapsed();
+        // println!("Duration: {duration:?}");
+        // return;
 
         let n_states = 5;
         let decider_last = 1;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
-            .machine_limit(100_500_000_000)
-            .step_limit_hold(1000)
-            .step_limit_cycler(1500)
+            .machine_limit(100_000_000_000)
+            .step_limit_hold(500)
+            .step_limit_cycler(25_000)
             .step_limit_bouncer(200)
             // .limit_machines_decided(100_000)
-            .limit_machines_undecided(100)
+            // .limit_machines_undecided(100)
             // .file_id_range(0..1_000_000)
             // .generator_batch_size_request_full(5_000_000)
-            // .generator_reduced_batch_size_request(100_000)
+            .generator_reduced_batch_size_request(8_000_000)
             // .limit_machines_undecided(20)
             // .write_html_file(true)
             .cpu_utilization(100)
@@ -202,7 +205,7 @@ fn main() {
             if config.write_html_file() {
                 for m_info in m_undecided.iter().take(1000) {
                     let machine = Machine::from(m_info);
-                    bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+                    bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
                         &machine, &config,
                     );
                     DeciderHoldU128Long::decide_single_machine(&machine, &config);
@@ -296,7 +299,7 @@ fn main() {
             let res = pre_decider::run_pre_decider_simple(machine.transition_table());
             if res == MachineStatus::NoDecision {
                 let res = DeciderHoldU128Long::decide_single_machine(&machine, &config);
-                let res = bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+                let res = bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
                     &machine, &config,
                 );
             }
@@ -308,22 +311,22 @@ fn main() {
 fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<DeciderConfig<'a>> {
     // Decider
     let mut dc_cycler_1 = DeciderStandard::Cycler.decider_config(config_1);
-    dc_cycler_1.fo_result_worker = Some(result_worker::cycler_html_filter);
+    // dc_cycler_1.fo_result_worker = Some(result_worker::cycler_html_filter);
     // let dc_cycler_1 = DeciderConfig::new(
     //     bb_challenge::decider_cycler_v5::DeciderCycler::decider_id(),
-    //     bb_challenge::decider_cycler_v5::DeciderCycler::decider_run_batch,
+    //     bb_challenge::decider_cycler::DeciderCycler::decider_run_batch,
     //     // result_worker::cycler_html_filter,
     //     &config_1,
     // );
     // let dc_bouncer_1 = DeciderStandard::Bouncer.decider_config(config_1);
     let dc_hold = DeciderStandard::Hold.decider_config(config_1);
-    // let dc_cycler_2 = DeciderStandard::Cycler.decider_config(config_2);
-    let dc_cycler_2 = DeciderConfig::new_with_worker(
-        bb_challenge::decider_cycler_v4::DeciderCycler::decider_id(),
-        bb_challenge::decider_cycler_v4::DeciderCycler::decider_run_batch,
-        result_worker::cycler_html_filter,
-        config_2,
-    );
+    let dc_cycler_2 = DeciderStandard::Cycler.decider_config(config_2);
+    // let dc_cycler_2 = DeciderConfig::new_with_worker(
+    //     bb_challenge::decider_cycler_v4::DeciderCycler::decider_id(),
+    //     bb_challenge::decider_cycler_v4::DeciderCycler::decider_run_batch,
+    //     result_worker::cycler_html_filter,
+    //     config_2,
+    // );
     let dc_bouncer_2 = DeciderStandard::Bouncer.decider_config(config_2);
 
     let decider_config = vec![
