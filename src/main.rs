@@ -19,21 +19,19 @@ use std::{
 use bb_challenge::{
     arg_handler,
     bb_file_reader::{BBFileDataProviderBuilder, BBFileReader},
-    config::{self, Config},
+    config::{self, Config, FILE_PATH_BB5_CHALLENGE_DATA_FILE},
     data_provider::DataProvider,
     decider::{self, Decider, DeciderConfig, DeciderStandard},
     decider_bouncer_v1::DeciderBouncerV1,
     decider_engine::{
-        run_decider_chain_data_provider_single_thread,
-        run_decider_chain_data_provider_single_thread_reporting,
-        run_decider_chain_threaded_data_provider_multi_thread,
-        run_decider_chain_threaded_data_provider_single_thread,
-        run_decider_chain_threaded_data_provider_single_thread_reporting,
+        self, batch_run_decider_chain_data_provider_single_thread,
+        batch_run_decider_chain_threaded_data_provider_multi_thread,
+        batch_run_decider_chain_threaded_data_provider_single_thread, run_decider_chain_gen,
     },
-    decider_hold_u128_long::DeciderHoldU128Long,
+    decider_hold_u128_long_v3::DeciderHoldU128Long,
     decider_result::{BatchResult, DeciderResultStats},
     decider_result_worker::{self},
-    generator::Generator,
+    generator::{Generator, GeneratorStandard},
     generator_full::GeneratorFull,
     generator_reduced::GeneratorReduced,
     html,
@@ -44,7 +42,7 @@ use bb_challenge::{
     single_thread_worker::SingleThreadWorker,
     status::MachineStatus,
     transition_symbol2::TransitionTableSymbol2,
-    Cores,
+    CoreUsage,
 };
 
 use busy_beaver::{
@@ -55,7 +53,9 @@ use busy_beaver::{
 // use test_machines::run_machine;
 // use test_single_deciders::{test_expanding_loop, test_expanding_sinus};
 
-// Validate Cycler / Bouncer by checking DecidedEndless machines by Hold decider
+// Cycler ID: 60202 1RB0RZ_0RC0RC_1LD1RC_0LD0LE_1RA1RC: left shift panic at line 339
+// TODO Validate Cycler / Bouncer by checking DecidedEndless machines by Hold decider
+// TODO HTML Step Limit -> Line Limit
 // TODO Benchmarks really bad
 
 // TODO Worker as single thread
@@ -64,45 +64,24 @@ use busy_beaver::{
 //  Machine No.   191,658,921: 1RB1LB_1LA0LC_---1LD_1RD0RA
 //    Machine No. 5,721,093,031: 1RB1LB_1LA0LD_1RC0RA_---1LC
 // TODO generator backwards?
-// TODO threaded: undefined and worker
-// TODO threaded: atomic update save
+// TODO threaded: Worker as single thread, atomic update save (see below test_single_thread_worker)
 // TODO threaded: recycle threads / thread pool
 // TODO threaded: Why so slow under windows?
 
-fn test_single_thread_worker() {
-    // Example of the single thread worker, addressing "TODO Worker as single thread"
-    println!("--- Single Thread Worker Example ---");
-    let (worker, worker_handle) = SingleThreadWorker::new();
-
-    // Submit a job from the main thread.
-    worker.execute(|| {
-        println!("[Worker] This is job 1, running in the worker thread.");
-        thread::sleep(Duration::from_millis(500));
-        println!("[Worker] Job 1 finished.");
-    });
-    println!("[Main] Job 1 submitted from main thread.");
-
-    // To submit a job from another thread, we clone the worker handle.
-    let worker_for_spawn = worker.clone();
-    let spawned_handle = thread::spawn(move || {
-        println!("[Spawned Thread] Submitting job 2 from a spawned thread.");
-        worker_for_spawn.execute(|| {
-            println!("[Worker] This is job 2, running in the worker thread.");
-            thread::sleep(Duration::from_millis(100));
-            println!("[Worker] Job 2 finished.");
-        });
-        // worker_for_spawn is dropped here when the thread finishes.
-    });
-
-    // We must wait for the spawned thread to complete. This ensures its handle is dropped.
-    spawned_handle.join().unwrap();
-
-    // Drop the original worker handle to signal shutdown.
-    // The worker will finish all queued jobs before stopping.
-    drop(worker);
-    worker_handle.join().unwrap();
-    println!("[Main] Worker thread has finished.");
-    println!("--- End of Example ---\n");
+// can be overwritten
+fn test() {
+    let config_cycler = Config::builder(4)
+        .machine_limit(500_000_000)
+        .step_limit_cycler(150)
+        .build();
+    let mut dc_cycler = DeciderStandard::Cycler.decider_config(&config_cycler);
+    let result = bb_challenge::decider_engine::run_decider_gen(
+        dc_cycler,
+        GeneratorStandard::GeneratorReduced,
+        CoreUsage::MultiCore,
+    );
+    println!("{}", result.to_string_with_duration());
+    assert_eq!(107, result.machine_max_steps().unwrap().steps());
 }
 
 /// Main function for tests, running deciders and other stuff.
@@ -121,6 +100,20 @@ fn main() {
     // Done: what is the issue after 409_975_399?
     if args.len() < 2 {
         // test_single_thread_worker();
+        // test();
+        // return;
+
+        // single machine
+        // let config_single = Config::builder(4).write_html_file(true).build();
+        // let id = 1636268618;
+        // let machine =
+        //     Machine::from_standard_tm_text_format(id, &"1RB0RB_1LC1RA_1RD1LC_---1RB").unwrap();
+        // let ms = bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+        //     &machine,
+        //     &config_single,
+        // );
+        // println!("M {id}: {}", ms);
+        // return;
 
         // let start = std::time::Instant::now();
         // // bb_challenge::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
@@ -149,18 +142,17 @@ fn main() {
         let decider_last = 4;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
-            .machine_limit(100_000_000_000)
-            .step_limit_cycler(1500)
+            // .machine_limit(1_000_000_000_000)
+            .step_limit_cycler(150)
             .step_limit_bouncer(20_000)
             .step_limit_hold(50_000_000)
             // .limit_machines_decided(100_000)
-            // .limit_machines_undecided(100)
-            // .file_id_range(0..1_000_000)
+            .limit_machines_undecided(200)
+            .file_id_range(0..50_000)
             // .generator_batch_size_request_full(5_000_000)
             // .generator_reduced_batch_size_request(8_000_000)
-            // .limit_machines_undecided(20)
             // .write_html_file(true)
-            .cpu_utilization(150)
+            .cpu_utilization(80)
             .build();
         println!("Config 1: {config_1}");
         // let config_bouncer = Config::builder(n_states)
@@ -183,7 +175,7 @@ fn main() {
             // .machine_limit(100_000_000_000)
             .step_limit_cycler(110_000)
             // .step_limit_bouncer(150_000)
-            .limit_machines_undecided(100)
+            // .limit_machines_undecided(100)
             // .step_limit_cycler(50_000)
             // .step_limit_bouncer(200_000)
             .build();
@@ -191,23 +183,18 @@ fn main() {
 
         let decider_configs = build_decider_config(&config_1, &config_2);
 
-        // single machine
-        // let config_single = Config::builder(4).write_html_file(true).build();
-        // let id = 1636268618;
-        // let machine =
-        //     Machine::from_standard_tm_text_format(id, &"1RB0RB_1LC1RA_1RD1LC_---1RB").unwrap();
-        // let ms = bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
-        //     &machine,
-        //     &config_single,
+        // let result =
+        //     test_run_multiple_decider(&decider_configs[0..decider_last], CoreUsage::MultiCore);
+        // let result = run_decider_chain_gen(
+        //     &decider_configs[0..decider_last],
+        //     GeneratorStandard::GeneratorReduced,
+        //     CoreUsage::MultiCore,
         // );
-        // println!("M {id}: {}", ms);
-        // return;
-
-        // let result = test_run_multiple_decider(&decider_configs[0..decider_last], Cores::MultiCore);
         assert_eq!(5, config_1.n_states());
-        let result = test_file_read(
+        let result = decider_engine::run_deciders_bb_challenge_file(
             &decider_configs[0..decider_last],
-            Cores::SingleCoreGeneratorMultiCoreDecider,
+            CoreUsage::SingleCoreGeneratorMultiCoreDecider,
+            FILE_PATH_BB5_CHALLENGE_DATA_FILE.to_string(),
         );
 
         let mut names = Vec::new();
@@ -224,33 +211,13 @@ fn main() {
 
         // write undecided to html
         if let Some(m_undecided) = result.machines_undecided_sorted() {
-            println!(
-                "Writing {} undecided machines to html...",
-                m_undecided.len()
-            );
             let config = Config::builder_from_config(&config_1)
-                .write_html_file(true)
+                .step_limit_cycler(100_000)
+                .step_limit_bouncer(100_000)
+                .step_limit_hold(100_000)
+                .write_html_line_limit(25_000)
                 .build();
-            if config.write_html_file() {
-                // hard limit of 5_000
-                for (i, m_info) in m_undecided.iter().take(5_000).enumerate() {
-                    let machine = Machine::from(m_info);
-                    // write hold (because self ref)
-                    DeciderHoldU128Long::decide_single_machine(&machine, &config);
-                    // write bouncer (because single step)
-                    bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decide_single_machine(
-                        &machine, &config,
-                    );
-                    // write cycler (because single step)
-                    bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
-                        &machine, &config,
-                    );
-                    if (i + 1) % 50 == 0 {
-                        println!("progress: {} / {}", i + 1, m_undecided.len());
-                    }
-                }
-                println!("done.");
-            }
+            html::write_machines_to_html(&m_undecided, "undecided", &config, 1000, false);
         }
 
         // show_struct_sizes();
@@ -385,58 +352,6 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     decider_config
 }
 
-fn test_run_multiple_decider(
-    decider_config: &[DeciderConfig],
-    multi_core: Cores,
-) -> DeciderResultStats {
-    // let f_result_worker = decider_result_worker::no_worker;
-    let first_config = decider_config.first().expect("No decider given").config();
-
-    // let generator = GeneratorFull::new(first_config);
-    let generator = GeneratorReduced::new(first_config);
-    match multi_core {
-        Cores::SingleCore => {
-            run_decider_chain_data_provider_single_thread(decider_config, generator)
-        }
-        Cores::SingleCoreGeneratorMultiCoreDecider => {
-            run_decider_chain_threaded_data_provider_single_thread(decider_config, generator)
-        }
-        Cores::MultiCore => {
-            run_decider_chain_threaded_data_provider_multi_thread(decider_config, generator)
-        }
-        _ => panic!("use 0: single, 1: multi with single generator, 2: multi"),
-    }
-}
-
-fn test_file_read(decider_config: &[DeciderConfig], multi_core: Cores) -> DeciderResultStats {
-    let first_config = decider_config.first().unwrap().config();
-    let r = BBFileDataProviderBuilder::new()
-        .id_range(first_config.file_id_range())
-        .batch_size(200)
-        .build();
-    let mut bb_file_reader;
-    match r {
-        Ok(f) => bb_file_reader = f,
-        Err(e) => {
-            panic!("File Reader could not be build: {e}");
-        }
-    }
-    // println!("Reader: {:?}", bb_file_reader);
-    // let r = bb_file_reader.machine_batch_next();
-    // println!("machines: {}", r.machines.len());
-
-    match multi_core {
-        Cores::SingleCore => {
-            run_decider_chain_data_provider_single_thread(decider_config, bb_file_reader)
-        }
-        Cores::SingleCoreGeneratorMultiCoreDecider => {
-            run_decider_chain_threaded_data_provider_single_thread(decider_config, bb_file_reader)
-        }
-        // 2 => run_decider_chain_threaded_data_provider_multi_thread(decider_config, bb_file_reader),
-        _ => panic!("use 0: single, 1: multi with single generator, 2: multi not allowed"),
-    }
-}
-
 fn bench_generate_reduced(n_states: usize, generate_limit: u64) {
     let config = Config::builder(n_states)
         .machine_limit(generate_limit)
@@ -454,6 +369,42 @@ fn bench_generate_reduced(n_states: usize, generate_limit: u64) {
         }
     }
     println!("Size Total: {p_count}");
+}
+
+fn test_single_thread_worker() {
+    // Example of the single thread worker, addressing "TODO Worker as single thread"
+    println!("--- Single Thread Worker Example ---");
+    let (worker, worker_handle) = SingleThreadWorker::new();
+
+    // Submit a job from the main thread.
+    worker.execute(|| {
+        println!("[Worker] This is job 1, running in the worker thread.");
+        thread::sleep(Duration::from_millis(500));
+        println!("[Worker] Job 1 finished.");
+    });
+    println!("[Main] Job 1 submitted from main thread.");
+
+    // To submit a job from another thread, we clone the worker handle.
+    let worker_for_spawn = worker.clone();
+    let spawned_handle = thread::spawn(move || {
+        println!("[Spawned Thread] Submitting job 2 from a spawned thread.");
+        worker_for_spawn.execute(|| {
+            println!("[Worker] This is job 2, running in the worker thread.");
+            thread::sleep(Duration::from_millis(100));
+            println!("[Worker] Job 2 finished.");
+        });
+        // worker_for_spawn is dropped here when the thread finishes.
+    });
+
+    // We must wait for the spawned thread to complete. This ensures its handle is dropped.
+    spawned_handle.join().unwrap();
+
+    // Drop the original worker handle to signal shutdown.
+    // The worker will finish all queued jobs before stopping.
+    drop(worker);
+    worker_handle.join().unwrap();
+    println!("[Main] Worker thread has finished.");
+    println!("--- End of Example ---\n");
 }
 
 fn show_struct_sizes() {
