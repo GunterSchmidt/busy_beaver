@@ -101,18 +101,35 @@ fn main() {
     if args.len() < 2 {
         // test_single_thread_worker();
         // test();
-        // return;
-
+        //         bb_challenge::examples::bb_challenge_id_30605_cycler_to_html();
+        //         return;
+        //
         // single machine
-        // let config_single = Config::builder(4).write_html_file(true).build();
-        // let id = 1636268618;
+        // let config_single = Config::builder(4)
+        //     .write_html_file(true)
+        //     .write_html_line_limit(25_000)
+        //     .step_limit_cycler(50_000)
+        //     .step_limit_bouncer(50_000)
+        //     .build();
+        // let id = 30605;
+        // // let machine =
+        // //     Machine::from_standard_tm_text_format(id, "1RB0RZ_0RC0RA_1RD0LE_0LC1RC_1LC0RA")
+        // //         .unwrap();
         // let machine =
-        //     Machine::from_standard_tm_text_format(id, &"1RB0RB_1LC1RA_1RD1LC_---1RB").unwrap();
-        // let ms = bb_challenge::decider_cycler_v5::DeciderCycler::decide_single_machine(
+        //     Machine::from_standard_tm_text_format(id, "1RB0LB_1LA0LC_---1RD_0RA0RA").unwrap();
+        // let ms = bb_challenge::decider_bouncer_128::DeciderBouncerV2::decide_single_machine(
         //     &machine,
         //     &config_single,
         // );
-        // println!("M {id}: {}", ms);
+        // // let ms = bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decide_single_machine(
+        // //     &machine,
+        // //     &config_single,
+        // // );
+        // // let ms = bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
+        // //     &machine,
+        // //     &config_single,
+        // // );
+        // println!("Machine {id}: {}", ms);
         // return;
 
         // let start = std::time::Instant::now();
@@ -138,16 +155,16 @@ fn main() {
         // println!("Duration: {duration:?}");
         // return;
 
-        let n_states = 5;
-        let decider_last = 4;
+        let n_states = 4;
+        let decider_last = 2;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
-            // .machine_limit(1_000_000_000_000)
-            .step_limit_cycler(150)
+            .machine_limit(100_000_000_000)
+            .step_limit_cycler(1500)
             .step_limit_bouncer(20_000)
-            .step_limit_hold(50_000_000)
+            .step_limit_hold(1_000_000)
             // .limit_machines_decided(100_000)
-            .limit_machines_undecided(200)
+            // .limit_machines_undecided(200)
             .file_id_range(0..50_000)
             // .generator_batch_size_request_full(5_000_000)
             // .generator_reduced_batch_size_request(8_000_000)
@@ -183,19 +200,17 @@ fn main() {
 
         let decider_configs = build_decider_config(&config_1, &config_2);
 
-        // let result =
-        //     test_run_multiple_decider(&decider_configs[0..decider_last], CoreUsage::MultiCore);
-        // let result = run_decider_chain_gen(
-        //     &decider_configs[0..decider_last],
-        //     GeneratorStandard::GeneratorReduced,
-        //     CoreUsage::MultiCore,
-        // );
-        assert_eq!(5, config_1.n_states());
-        let result = decider_engine::run_deciders_bb_challenge_file(
+        let result = run_decider_chain_gen(
             &decider_configs[0..decider_last],
-            CoreUsage::SingleCoreGeneratorMultiCoreDecider,
-            FILE_PATH_BB5_CHALLENGE_DATA_FILE.to_string(),
+            GeneratorStandard::GeneratorReduced,
+            CoreUsage::MultiCore,
         );
+        // assert_eq!(5, config_1.n_states());
+        // let result = decider_engine::run_deciders_bb_challenge_file(
+        //     &decider_configs[0..decider_last],
+        //     CoreUsage::SingleCoreGeneratorMultiCoreDecider,
+        //     FILE_PATH_BB5_CHALLENGE_DATA_FILE.to_string(),
+        // );
 
         let mut names = Vec::new();
         for d in decider_configs[0..decider_last].iter() {
@@ -325,6 +340,11 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     //     &config_1,
     // );
     let dc_bouncer_1 = DeciderStandard::BouncerV2.decider_config(config_1);
+    let dc_bouncer_1_128 = DeciderConfig::new(
+        bb_challenge::decider_bouncer_128::DeciderBouncerV2::decider_id(),
+        bb_challenge::decider_bouncer_128::DeciderBouncerV2::decider_run_batch,
+        config_2,
+    );
     // let dc_bouncer_1 = DeciderConfig::new_with_worker(
     //     bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decider_id(),
     //     bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decider_run_batch,
