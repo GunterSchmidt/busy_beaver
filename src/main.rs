@@ -28,7 +28,7 @@ use bb_challenge::{
         batch_run_decider_chain_threaded_data_provider_multi_thread,
         batch_run_decider_chain_threaded_data_provider_single_thread, run_decider_chain_gen,
     },
-    decider_hold_u128_long_v3::DeciderHoldU128Long,
+    decider_hold_long_v3::DeciderHoldLong,
     decider_result::{BatchResult, DeciderResultStats},
     decider_result_worker::{self},
     generator::{Generator, GeneratorStandard},
@@ -99,28 +99,24 @@ fn main() {
     // No arguments
     // Done: what is the issue after 409_975_399?
     if args.len() < 2 {
-        // test_single_thread_worker();
-        // test();
-        //         bb_challenge::examples::bb_challenge_id_30605_cycler_to_html();
-        //         return;
-        //
         // single machine
         // let config_single = Config::builder(4)
         //     .write_html_file(true)
         //     .write_html_line_limit(25_000)
         //     .step_limit_cycler(50_000)
-        //     .step_limit_bouncer(50_000)
+        //     .step_limit_bouncer(5000)
         //     .build();
-        // let id = 30605;
+        // let id = 0;
         // // let machine =
         // //     Machine::from_standard_tm_text_format(id, "1RB0RZ_0RC0RA_1RD0LE_0LC1RC_1LC0RA")
         // //         .unwrap();
         // let machine =
-        //     Machine::from_standard_tm_text_format(id, "1RB0LB_1LA0LC_---1RD_0RA0RA").unwrap();
-        // let ms = bb_challenge::decider_bouncer_128::DeciderBouncerV2::decide_single_machine(
-        //     &machine,
-        //     &config_single,
-        // );
+        //     Machine::from_standard_tm_text_format(id, "1RB---_1LC0RD_0LC1RB_0RB1RA").unwrap();
+        // let ms =
+        //     bb_challenge::decider_bouncer_128_speed_up::DeciderBouncer128::decide_single_machine(
+        //         &machine,
+        //         &config_single,
+        //     );
         // // let ms = bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decide_single_machine(
         // //     &machine,
         // //     &config_single,
@@ -131,15 +127,31 @@ fn main() {
         // // );
         // println!("Machine {id}: {}", ms);
         // return;
+        // test_single_thread_worker();
+        // test();
+        // bb_challenge::examples::bb_challenge_id_30605_cycler_to_html();
+        // return;
 
-        // let start = std::time::Instant::now();
-        // // bb_challenge::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
+        let start = std::time::Instant::now();
+        // bb_challenge::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
+        let m = Machine::build_machine("BB5_MAX").unwrap();
+        bb_challenge::decider_hold_long_v3::test_decider_hold(&m.to_standard_tm_text_format());
         // bb_challenge::decider_hold_u128_long_v3::test_decider_hold_u128(
         //     "1RB1LA_1RC1RD_1LE---_0RC1RE_1RA0RA",
         // );
-        // let duration = start.elapsed();
-        // println!("Duration: {duration:?}");
-        // return;
+        let duration = start.elapsed();
+        println!("Duration: {duration:?}");
+
+        let start = std::time::Instant::now();
+        // bb_challenge::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
+        let m = Machine::build_machine("BB5_MAX").unwrap();
+        bb_challenge::decider_hold_long_apex::test_decider_hold(&m.to_standard_tm_text_format());
+        // bb_challenge::decider_hold_u128_long_v3::test_decider_hold_u128(
+        //     "1RB1LA_1RC1RD_1LE---_0RC1RE_1RA0RA",
+        // );
+        let duration = start.elapsed();
+        println!("Duration: {duration:?}");
+        return;
 
         // let start = std::time::Instant::now();
         // bb_challenge::decider_hold_u128_long::test_decider_hold_u128_applies_bb5_max();
@@ -159,17 +171,18 @@ fn main() {
         let decider_last = 2;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
-            .machine_limit(100_000_000_000)
+            .machine_limit(10_000_000_000)
             .step_limit_cycler(1500)
-            .step_limit_bouncer(20_000)
+            .step_limit_bouncer(5000)
             .step_limit_hold(1_000_000)
-            // .limit_machines_decided(100_000)
+            // .limit_machines_decided(100)
+            // if set, then these machines will be printed to disk
             // .limit_machines_undecided(200)
             .file_id_range(0..50_000)
             // .generator_batch_size_request_full(5_000_000)
             // .generator_reduced_batch_size_request(8_000_000)
             // .write_html_file(true)
-            .cpu_utilization(80)
+            // .cpu_utilization(80)
             .build();
         println!("Config 1: {config_1}");
         // let config_bouncer = Config::builder(n_states)
@@ -190,11 +203,14 @@ fn main() {
         // println!("Config Bouncer: {config_bouncer}");
         let config_2 = Config::builder_from_config(&config_1)
             // .machine_limit(100_000_000_000)
-            .step_limit_cycler(110_000)
-            // .step_limit_bouncer(150_000)
+            // .step_limit_cycler(110_000)
+            // .step_limit_bouncer(5_000)
             // .limit_machines_undecided(100)
             // .step_limit_cycler(50_000)
             // .step_limit_bouncer(200_000)
+            // .limit_machines_decided(100)
+            // .limit_machines_undecided(100)
+            // .write_html_file(true)
             .build();
         println!("Config 2: {config_2}");
 
@@ -203,7 +219,7 @@ fn main() {
         let result = run_decider_chain_gen(
             &decider_configs[0..decider_last],
             GeneratorStandard::GeneratorReduced,
-            CoreUsage::MultiCore,
+            CoreUsage::SingleCore,
         );
         // assert_eq!(5, config_1.n_states());
         // let result = decider_engine::run_deciders_bb_challenge_file(
@@ -319,7 +335,7 @@ fn main() {
                 .build();
             let res = pre_decider::run_pre_decider_simple(machine.transition_table());
             if res == MachineStatus::NoDecision {
-                let res = DeciderHoldU128Long::decide_single_machine(&machine, &config);
+                let res = DeciderHoldLong::decide_single_machine(&machine, &config);
                 let res = bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
                     &machine, &config,
                 );
@@ -339,11 +355,16 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     //     // result_worker::cycler_html_filter,
     //     &config_1,
     // );
-    let dc_bouncer_1 = DeciderStandard::BouncerV2.decider_config(config_1);
-    let dc_bouncer_1_128 = DeciderConfig::new(
-        bb_challenge::decider_bouncer_128::DeciderBouncerV2::decider_id(),
-        bb_challenge::decider_bouncer_128::DeciderBouncerV2::decider_run_batch,
-        config_2,
+    let dc_bouncer_1 = DeciderStandard::Bouncer128.decider_config(config_1);
+    let dc_bouncer_1_self_ref = DeciderConfig::new(
+        bb_challenge::decider_bouncer_128::DeciderBouncer128::decider_id(),
+        bb_challenge::decider_bouncer_128_speed_up::DeciderBouncer128::decider_run_batch,
+        config_1,
+    );
+    let dc_bouncer_1_apex = DeciderConfig::new(
+        bb_challenge::decider_bouncer_apex::DeciderBouncerApex::decider_id(),
+        bb_challenge::decider_bouncer_apex::DeciderBouncerApex::decider_run_batch,
+        config_1,
     );
     // let dc_bouncer_1 = DeciderConfig::new_with_worker(
     //     bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decider_id(),
@@ -359,11 +380,13 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     //     result_worker::cycler_html_filter,
     //     config_2,
     // );
-    let dc_bouncer_2 = DeciderStandard::BouncerV2.decider_config(config_2);
+    let dc_bouncer_2 = DeciderStandard::Bouncer128.decider_config(config_2);
 
     let decider_config = vec![
         dc_cycler_1,
-        dc_bouncer_1,
+        // dc_bouncer_1,
+        dc_bouncer_1_apex,
+        // dc_bouncer_1_self_ref,
         dc_cycler_2,
         // dc_bouncer_2,
         dc_hold,

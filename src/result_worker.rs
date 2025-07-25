@@ -61,7 +61,7 @@ pub fn bouncer_html_filter(batch_data: &mut BatchData) -> ResultWorker {
                 let machine = batch_data.machines_decided.machines[i];
                 let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
                 println!("Bouncer Html: {mi}");
-                bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decide_single_machine(
+                bb_challenge::decider_bouncer_128::DeciderBouncer128::decide_single_machine(
                     &machine,
                     &config_html,
                 );
