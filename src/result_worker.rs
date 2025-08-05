@@ -1,8 +1,8 @@
 use bb_challenge::{
     config::{Config, StepTypeSmall},
+    decider::decider_result::{BatchData, EndReason},
+    decider::decider_result_worker::ResultWorker,
     decider::Decider,
-    decider_result::{BatchData, EndReason},
-    decider_result_worker::ResultWorker,
     machine_info::MachineInfo,
 };
 
@@ -28,7 +28,7 @@ pub fn cycler_html_filter(batch_data: &mut BatchData) -> ResultWorker {
                 let machine = batch_data.machines_decided.machines[i];
                 let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
                 println!("Cycler Html: {mi}");
-                bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
+                bb_challenge::decider::decider_cycler::DeciderCycler::decide_single_machine(
                     &machine,
                     &config_html,
                 );
@@ -63,7 +63,7 @@ pub fn bouncer_html_filter(batch_data: &mut BatchData) -> ResultWorker {
                 let machine = batch_data.machines_decided.machines[i];
                 let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
                 println!("Bouncer Html: {mi}");
-                bb_challenge::decider_bouncer_128::DeciderBouncer128::decide_single_machine(
+                bb_challenge::decider::decider_bouncer_128::DeciderBouncer128::decide_single_machine(
                     &machine,
                     &config_html,
                 );

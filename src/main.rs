@@ -25,17 +25,10 @@ use bb_challenge::{
         DataProvider,
     },
     decider::{
-        self, decider_hold_compact::DeciderHoldCompact, Decider, DeciderConfig, DeciderStandard,
+        self, decider_bouncer_128_speed_up, decider_bouncer_apex, decider_cycler, decider_engine,
+        decider_hold_compact::DeciderHoldCompact, decider_hold_long_v3::DeciderHoldLong, Decider,
+        DeciderConfig, DeciderStandard,
     },
-    decider_bouncer_v1::DeciderBouncerV1,
-    decider_engine::{
-        self, batch_run_decider_chain_data_provider_single_thread,
-        batch_run_decider_chain_threaded_data_provider_multi_thread,
-        batch_run_decider_chain_threaded_data_provider_single_thread, run_decider_chain_gen,
-    },
-    decider_hold_long_v3::DeciderHoldLong,
-    decider_result::{BatchResult, DeciderResultStats},
-    decider_result_worker::{self},
     html,
     machine::Machine,
     machine_info::MachineInfo,
@@ -77,7 +70,7 @@ fn test() {
         .step_limit_cycler(150)
         .build();
     let mut dc_cycler = DeciderStandard::Cycler.decider_config(&config_cycler);
-    let result = bb_challenge::decider_engine::run_decider_gen(
+    let result = decider_engine::run_decider_gen(
         dc_cycler,
         GeneratorStandard::GeneratorReduced,
         CoreUsage::MultiCore,
@@ -211,7 +204,7 @@ fn main() {
 
         let decider_configs = build_decider_config(&config_1, &config_2);
 
-        let result = run_decider_chain_gen(
+        let result = decider_engine::run_decider_chain_gen(
             &decider_configs[0..decider_last],
             GeneratorStandard::GeneratorReduced,
             CoreUsage::MultiCore,
@@ -331,9 +324,7 @@ fn main() {
             let res = pre_decider::run_pre_decider_simple(machine.transition_table());
             if res == MachineStatus::NoDecision {
                 let res = DeciderHoldLong::decide_single_machine(&machine, &config);
-                let res = bb_challenge::decider_cycler::DeciderCycler::decide_single_machine(
-                    &machine, &config,
-                );
+                let res = decider_cycler::DeciderCycler::decide_single_machine(&machine, &config);
             }
             println!("Result: {res}");
         }
@@ -352,13 +343,13 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     // );
     let dc_bouncer_1 = DeciderStandard::Bouncer128.decider_config(config_2);
     let dc_bouncer_1_self_ref = DeciderConfig::new(
-        bb_challenge::decider_bouncer_128::DeciderBouncer128::decider_id(),
-        bb_challenge::decider_bouncer_128_speed_up::DeciderBouncer128::decider_run_batch,
+        bb_challenge::decider::decider_bouncer_128::DeciderBouncer128::decider_id(),
+        decider_bouncer_128_speed_up::DeciderBouncer128::decider_run_batch,
         config_1,
     );
     let dc_bouncer_1_apex = DeciderConfig::new(
-        bb_challenge::decider_bouncer_apex::DeciderBouncerApex::decider_id(),
-        bb_challenge::decider_bouncer_apex::DeciderBouncerApex::decider_run_batch,
+        decider_bouncer_apex::DeciderBouncerApex::decider_id(),
+        decider_bouncer_apex::DeciderBouncerApex::decider_run_batch,
         config_1,
     );
     // let dc_bouncer_1 = DeciderConfig::new_with_worker(
@@ -452,7 +443,7 @@ fn show_struct_sizes() {
     );
     println!(
         "Result: {}",
-        std::mem::size_of::<bb_challenge::decider_result::DeciderResultStats>()
+        std::mem::size_of::<bb_challenge::decider::decider_result::DeciderResultStats>()
     );
     println!(
         "DataProviderResult: {}",
@@ -460,7 +451,7 @@ fn show_struct_sizes() {
     );
     println!(
         "PreDeciderCount: {}",
-        std::mem::size_of::<bb_challenge::decider_result::PreDeciderCount>()
+        std::mem::size_of::<bb_challenge::decider::decider_result::PreDeciderCount>()
     );
 
     println!("Machine: {}", std::mem::size_of::<Machine>());

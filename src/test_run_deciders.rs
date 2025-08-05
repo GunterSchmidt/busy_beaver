@@ -4,7 +4,7 @@ use std::time::Duration;
 use bb_challenge::{
     config::Config,
     data_provider::{generator::Generator, generator_full::GeneratorFull, DataProvider},
-    decider_result::{DeciderResultStats, DurationDataProvider},
+    decider::decider_result::{DeciderResultStats, DurationDataProvider},
     machine::Machine,
     pre_decider::PreDeciderRun,
     reporter::Reporter,
