@@ -3,10 +3,8 @@ use std::time::Duration;
 
 use bb_challenge::{
     config::Config,
-    data_provider::DataProvider,
+    data_provider::{generator::Generator, generator_full::GeneratorFull, DataProvider},
     decider_result::{DeciderResultStats, DurationDataProvider},
-    generator::Generator,
-    generator_full::GeneratorFull,
     machine::Machine,
     pre_decider::PreDeciderRun,
     reporter::Reporter,

@@ -6,7 +6,9 @@ use bb_challenge::{
     machine_info::MachineInfo,
 };
 
+/// Number of steps which must be known before a HTML file is written.
 const MIN_STEPS_HTML: StepTypeSmall = 0;
+/// Max html files IN THIS BATCH, mostly useless as it does not count overall.
 const MAX_FILES_PER_BATCH: usize = 1000;
 
 /// requires config:
