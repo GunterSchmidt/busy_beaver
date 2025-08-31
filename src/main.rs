@@ -16,12 +16,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-use bb_challenge::{
+use bb_challenge::config::Config;
+use bb_challenge_work::{
     arg_handler,
-    config::{self, Config, FILE_PATH_BB5_CHALLENGE_DATA_FILE},
     data_provider::{
         generator::{Generator, GeneratorStandard},
-        generator_reduced::GeneratorReduced,
+        generator_binary::GeneratorType,
         DataProvider,
     },
     decider::{
@@ -30,13 +30,13 @@ use bb_challenge::{
         DeciderConfig, DeciderStandard,
     },
     html,
-    machine::Machine,
+    machine_binary::{MachineBinary, NotableMachine},
+    machine_id::MachineId,
     machine_info::MachineInfo,
     pre_decider::{self, PreDecider, PreDeciderRun},
     reporter::Reporter,
     single_thread_worker::SingleThreadWorker,
     status::MachineStatus,
-    transition_symbol2::TransitionTableSymbol2,
     CoreUsage,
 };
 
@@ -72,7 +72,7 @@ fn test() {
     let mut dc_cycler = DeciderStandard::Cycler.decider_config(&config_cycler);
     let result = decider_engine::run_decider_gen(
         dc_cycler,
-        GeneratorStandard::GeneratorReduced,
+        GeneratorType::GeneratorReducedBackward,
         CoreUsage::MultiCore,
     );
     println!("{}", result.to_string_with_duration());
@@ -81,37 +81,52 @@ fn test() {
 
 fn test_single_machine() {
     let start = std::time::Instant::now();
-    let machine = Machine::build_machine("BB4_MAX").unwrap();
+    let machine = MachineId::build_machine("BB3_RADO").unwrap();
     let config_single = Config::builder(machine.n_states())
         .write_html_file(true)
         .write_html_line_limit(25_000)
         .step_limit_cycler(50_000)
         .step_limit_bouncer(5000)
         .build();
-    let status = DeciderHoldCompact::decide_single_machine(
-        // let status = bb_challenge::decider_hold_long_v3::DeciderHoldLong::decide_single_machine(
+    let status = DeciderHoldCompact::decide_single_machine_deprecated(
+        // let status = bb_challenge_work::decider_hold_long_v3::DeciderHoldLong::decide_single_machine(
         &machine,
         &config_single,
     );
     println!("Machine: {}", status);
     let duration = start.elapsed();
     println!("Duration: {duration:?}");
+}
+
+fn test_single_machine_binary() {
+    let start = std::time::Instant::now();
+    let machine = NotableMachine::Bb3Rado.machine();
+    let config_single = Config::builder(machine.n_states())
+        .write_html_file(true)
+        .write_html_line_limit(25_000)
+        .step_limit_cycler(50_000)
+        .step_limit_bouncer(5000)
+        .build();
+    let status = DeciderHoldLong::decide_single_machine(&machine, &config_single);
+    println!("Machine: {}", status);
+    let duration = start.elapsed();
+    println!("Duration: {duration:?}");
     return;
 
-    //         // bb_challenge::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
+    //         // bb_challenge_work::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
     //         let m = Machine::build_machine("BB5_MAX").unwrap();
-    //         bb_challenge::decider_hold_long_v3::test_decider_hold(&m.to_standard_tm_text_format());
-    //         // bb_challenge::decider_hold_u128_long_v3::test_decider_hold_u128(
+    //         bb_challenge_work::decider_hold_long_v3::test_decider_hold(&m.to_standard_tm_text_format());
+    //         // bb_challenge_work::decider_hold_u128_long_v3::test_decider_hold_u128(
     //         //     "1RB1LA_1RC1RD_1LE---_0RC1RE_1RA0RA",
     //         // );
     //         let duration = start.elapsed();
     //         println!("Duration: {duration:?}");
     //
     //         let start = std::time::Instant::now();
-    //         // bb_challenge::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
+    //         // bb_challenge_work::decider_bouncer_v2::test_decider("1RB0LA_1LC---_0LD0LC_1RD0RA");
     //         let m = Machine::build_machine("BB5_MAX").unwrap();
-    //         bb_challenge::decider_hold_long_apex::test_decider_hold(&m.to_standard_tm_text_format());
-    //         // bb_challenge::decider_hold_u128_long_v3::test_decider_hold_u128(
+    //         bb_challenge_work::decider_hold_long_apex::test_decider_hold(&m.to_standard_tm_text_format());
+    //         // bb_challenge_work::decider_hold_u128_long_v3::test_decider_hold_u128(
     //         //     "1RB1LA_1RC1RD_1LE---_0RC1RE_1RA0RA",
     //         // );
     //         let duration = start.elapsed();
@@ -133,44 +148,49 @@ fn main() {
 
     // No arguments
     if args.len() < 2 {
+        // show_struct_sizes();
         // test_single_machine();
+        // test_single_machine_binary();
+        // bb_challenge_work::data_provider::generator_universal::validate_next_with_batch_no();
         // return;
 
         // test_single_thread_worker();
         // test();
-        // bb_challenge::examples::bb_challenge_id_30605_cycler_to_html();
+        // bb_challenge_work::examples::bb_challenge_id_30605_cycler_to_html();
         // return;
 
         // let start = std::time::Instant::now();
-        // bb_challenge::decider_hold_u128_long::test_decider_hold_u128_applies_bb5_max();
+        // bb_challenge_work::decider_hold_u128_long::test_decider_hold_u128_applies_bb5_max();
         // let duration = start.elapsed();
         // println!("Duration: {duration:?}");
         // let start = std::time::Instant::now();
-        // bb_challenge::decider_hold_u128_long_v2::test_decider_hold_u128_applies_bb5_max();
+        // bb_challenge_work::decider_hold_u128_long_v2::test_decider_hold_u128_applies_bb5_max();
         // let duration = start.elapsed();
         // println!("Duration: {duration:?}");
         // let start = std::time::Instant::now();
-        // bb_challenge::decider_hold_u128_long_v3::test_decider_hold_u128_applies_bb5_max();
+        // bb_challenge_work::decider_hold_u128_long_v3::test_decider_hold_u128_applies_bb5_max();
         // let duration = start.elapsed();
         // println!("Duration: {duration:?}");
         // return;
 
-        let n_states = 2;
-        let decider_last = 3;
+        let n_states = 3;
+        let decider_last = 1;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
             .machine_limit(1000_000_000_000)
-            .step_limit_cycler(1500)
-            .step_limit_bouncer(5000)
-            .step_limit_hold(1_000_000)
-            // .limit_machines_decided(100)
+            // .machine_limit(50_000_000)
+            // .step_limit_cycler(1500)
+            // .step_limit_bouncer(5000)
+            // .step_limit_hold(1_000_000)
+            .limit_machines_decided(100000)
             // if set, then these machines will be printed to disk
             // .limit_machines_undecided(200)
             .file_id_range(0..50_000)
-            // .generator_batch_size_request_full(5_000_000)
+            // .generator_first_rotate_field_front(true)
+            // .generator_full_batch_size_request(10_000)
             // .generator_reduced_batch_size_request(8_000_000)
             // .write_html_file(true)
-            // .cpu_utilization(80)
+            // .cpu_utilization(25)
             .build();
         println!("Config 1: {config_1}");
         // let config_bouncer = Config::builder(n_states)
@@ -206,7 +226,9 @@ fn main() {
 
         let result = decider_engine::run_decider_chain_gen(
             &decider_configs[0..decider_last],
-            GeneratorStandard::GeneratorReduced,
+            // GeneratorType::GeneratorFullForward,
+            GeneratorType::GeneratorReducedForward,
+            // GeneratorType::GeneratorReducedBackward,
             CoreUsage::MultiCore,
         );
         // assert_eq!(5, config_1.n_states());
@@ -228,8 +250,17 @@ fn main() {
         }
         println!("\n{}", result.to_string_with_duration());
 
+        let m = result.machine_max_steps().unwrap();
+        println!("M Max: {m}");
+        // let m = Machine::from(&m);
+        println!("ID forward: {}", m.calc_id(true));
+        println!("ID backward: {}", m.calc_id(false));
+
+        let m = MachineId::build_machine("BB4_MAX").unwrap();
+        println!("{m}");
+
         // write undecided to html
-        if let Some(m_undecided) = result.machines_undecided_sorted() {
+        if let Some(m_undecided) = result.machines_undecided() {
             let config = Config::builder_from_config(&config_1)
                 .step_limit_cycler(100_000)
                 .step_limit_bouncer(100_000)
@@ -239,7 +270,23 @@ fn main() {
             html::write_machines_to_html(&m_undecided, "undecided", &config, 1000, false);
         }
 
-        // show_struct_sizes();
+        // write decided hold to html
+        if let Some(m_decided) = result.machines_decided() {
+            let config = Config::builder_from_config(&config_1)
+                .step_limit_cycler(100_000)
+                .step_limit_bouncer(100_000)
+                .step_limit_hold(100_000)
+                .write_html_line_limit(25_000)
+                .build();
+            // let hold_count = m_decided.iter().filter(|m| m.status() == MachineStatus::)
+            let mut m_hold = Vec::new();
+            for m in m_decided.iter() {
+                if let MachineStatus::DecidedHolds(_) = m.status() {
+                    m_hold.push(*m);
+                }
+            }
+            html::write_machines_to_html(&m_hold, "hold", &config, 1000, false);
+        }
 
         // run single machine
         // let machine = TM::build_machine("SA_BB2_MAX").unwrap();
@@ -270,9 +317,9 @@ fn main() {
 
         // let r = run_generator_decider_loop_as_decider(N_STATES, true);
         // println!("{}", r.to_string_extended());
-        // bb_challenge::decider_hold::test_decider_hold_u128_long_applies_bb5_max();
-        // bb_challenge::decider_u128::test_decider_hold_u128_applies_not_bb5_max();
-        // bb_challenge::decider_u128_long::test_decider_hold_u128_applies_bb5_max();
+        // bb_challenge_work::decider_hold::test_decider_hold_u128_long_applies_bb5_max();
+        // bb_challenge_work::decider_u128::test_decider_hold_u128_applies_not_bb5_max();
+        // bb_challenge_work::decider_u128_long::test_decider_hold_u128_applies_bb5_max();
         // return;
 
         // let mut machine = build_machine("BB5_S107").unwrap();
@@ -288,20 +335,20 @@ fn main() {
     } else {
         // use argument handler
         let arg_value = arg_handler::standard_args(&args);
-        let mut machine: Option<Machine> = None;
+        let mut machine: Option<MachineId> = None;
         match arg_value {
             arg_handler::ArgValue::Machine(m) => machine = Some(*m),
             arg_handler::ArgValue::TransitionTableGeneric(table) => {
                 if table.has_two_symbols() {
-                    let t = TransitionTableSymbol2::try_from(*table);
+                    let t = MachineBinary::try_from(*table);
                     match t {
-                        Ok(tc) => machine = Some(Machine::new(0, tc)),
+                        Ok(tc) => machine = Some(MachineId::new(0, tc)),
                         Err(e) => println!("{e}"),
                     }
                 } else {
                     println!(
                         "This machine has {} symbols and cannot be handled here.",
-                        table.dimensions_slow().n_symbols
+                        table.dimensions().n_symbols
                     );
                     println!("{table}");
                 }
@@ -323,8 +370,10 @@ fn main() {
                 .build();
             let res = pre_decider::run_pre_decider_simple(machine.transition_table());
             if res == MachineStatus::NoDecision {
-                let res = DeciderHoldLong::decide_single_machine(&machine, &config);
-                let res = decider_cycler::DeciderCycler::decide_single_machine(&machine, &config);
+                let res = DeciderHoldLong::decide_single_machine_deprecated(&machine, &config);
+                let res = decider_cycler::DeciderCycler::decide_single_machine_deprecated(
+                    &machine, &config,
+                );
             }
             println!("Result: {res}");
         }
@@ -336,14 +385,14 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     let mut dc_cycler_1 = DeciderStandard::Cycler.decider_config(config_1);
     // dc_cycler_1.fo_result_worker = Some(result_worker::cycler_html_filter);
     // let dc_cycler_1 = DeciderConfig::new(
-    //     bb_challenge::decider_cycler_v5::DeciderCycler::decider_id(),
-    //     bb_challenge::decider_cycler::DeciderCycler::decider_run_batch,
+    //     bb_challenge_work::decider_cycler_v5::DeciderCycler::decider_id(),
+    //     bb_challenge_work::decider_cycler::DeciderCycler::decider_run_batch,
     //     // result_worker::cycler_html_filter,
     //     &config_1,
     // );
     let dc_bouncer_1 = DeciderStandard::Bouncer128.decider_config(config_2);
     let dc_bouncer_1_self_ref = DeciderConfig::new(
-        bb_challenge::decider::decider_bouncer_128::DeciderBouncer128::decider_id(),
+        bb_challenge_work::decider::decider_bouncer_128::DeciderBouncer128::decider_id(),
         decider_bouncer_128_speed_up::DeciderBouncer128::decider_run_batch,
         config_1,
     );
@@ -353,16 +402,16 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
         config_1,
     );
     // let dc_bouncer_1 = DeciderConfig::new_with_worker(
-    //     bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decider_id(),
-    //     bb_challenge::decider_bouncer_v2::DeciderBouncerV2::decider_run_batch,
+    //     bb_challenge_work::decider_bouncer_v2::DeciderBouncerV2::decider_id(),
+    //     bb_challenge_work::decider_bouncer_v2::DeciderBouncerV2::decider_run_batch,
     //     result_worker::bouncer_html_filter,
     //     config_2,
     // );
     let dc_hold = DeciderStandard::Hold.decider_config(config_1);
     let dc_cycler_2 = DeciderStandard::Cycler.decider_config(config_2);
     // let dc_cycler_2 = DeciderConfig::new_with_worker(
-    //     bb_challenge::decider_cycler_v4::DeciderCycler::decider_id(),
-    //     bb_challenge::decider_cycler_v4::DeciderCycler::decider_run_batch,
+    //     bb_challenge_work::decider_cycler_v4::DeciderCycler::decider_id(),
+    //     bb_challenge_work::decider_cycler_v4::DeciderCycler::decider_run_batch,
     //     result_worker::cycler_html_filter,
     //     config_2,
     // );
@@ -379,25 +428,6 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
     ];
 
     decider_config
-}
-
-fn bench_generate_reduced(n_states: usize, generate_limit: u64) {
-    let config = Config::builder(n_states)
-        .machine_limit(generate_limit)
-        .build();
-    let mut generator = GeneratorReduced::new(&config);
-
-    let mut p_count: usize = 0;
-    loop {
-        let (permutations, is_last_batch) = generator.generate_permutation_batch_next();
-        p_count += permutations.len();
-        // println!("Size: {}", permutations.len());
-
-        if is_last_batch {
-            break;
-        }
-    }
-    println!("Size Total: {p_count}");
 }
 
 fn test_single_thread_worker() {
@@ -436,30 +466,43 @@ fn test_single_thread_worker() {
     println!("--- End of Example ---\n");
 }
 
+struct MachineOption {
+    id: Option<u128>,
+    /// Field 0 is used for more information to keep the size of this struct small.
+    transition_table: MachineBinary,
+    // has_self_referencing_transition: bool,
+}
+struct Machine2 {
+    id: u32,
+    /// Field 0 is used for more information to keep the size of this struct small.
+    transition_table: MachineBinary,
+    // has_self_referencing_transition: bool,
+}
+
 fn show_struct_sizes() {
-    println!(
-        "Config: {}",
-        std::mem::size_of::<bb_challenge::config::Config>()
-    );
+    println!("Config: {}", std::mem::size_of::<Config>());
     println!(
         "Result: {}",
-        std::mem::size_of::<bb_challenge::decider::decider_result::DeciderResultStats>()
+        std::mem::size_of::<bb_challenge_work::decider::decider_result::DeciderResultStats>()
     );
     println!(
         "DataProviderResult: {}",
-        std::mem::size_of::<bb_challenge::data_provider::DataProviderBatch>()
+        std::mem::size_of::<bb_challenge_work::data_provider::DataProviderBatch>()
     );
     println!(
         "PreDeciderCount: {}",
-        std::mem::size_of::<bb_challenge::decider::decider_result::PreDeciderCount>()
+        std::mem::size_of::<bb_challenge_work::decider::decider_result::PreDeciderCount>()
     );
 
-    println!("Machine: {}", std::mem::size_of::<Machine>());
+    println!("TransitionTable: {}", std::mem::size_of::<MachineBinary>());
+    println!("Machine: {}", std::mem::size_of::<MachineId>());
+    println!("Machine 2: {}", std::mem::size_of::<Machine2>());
+    println!("MachineOption: {}", std::mem::size_of::<MachineOption>());
     println!("MachineInfo: {}", std::mem::size_of::<MachineInfo>());
     println!("MachineStatus: {}", std::mem::size_of::<MachineStatus>());
     println!(
         "TransitionCompact: {}",
-        std::mem::size_of::<bb_challenge::transition_symbol2::TransitionSymbol2>()
+        std::mem::size_of::<bb_challenge_work::transition_binary::TransitionBinary>()
     );
 
     // struct TestString {

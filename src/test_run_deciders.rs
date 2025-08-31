@@ -1,16 +1,19 @@
 #![allow(unused)]
 use std::time::Duration;
 
-use bb_challenge::{
-    config::Config,
-    data_provider::{generator::Generator, generator_full::GeneratorFull, DataProvider},
+use bb_challenge::config::Config;
+use bb_challenge_work::{
+    data_provider::{
+        generator::Generator,
+        generator_binary::{GeneratorBinary, GeneratorType},
+        DataProvider,
+    },
     decider::decider_result::{DeciderResultStats, DurationDataProvider},
-    machine::Machine,
+    machine_id::MachineId,
     pre_decider::PreDeciderRun,
     reporter::Reporter,
     status::{MachineStatus, UndecidedReason},
 };
-
 pub const PRINT_UNDECIDED_MACHINES: usize = 3;
 
 /// This run goes over the specified data, usually BB4 and just runs the pre-deciders.
@@ -20,11 +23,11 @@ pub const PRINT_UNDECIDED_MACHINES: usize = 3;
 /// One third of the time is used for result update. See .._undecided.
 pub fn run_generator_pre_deciders(config: &Config) -> DeciderResultStats {
     let start = std::time::Instant::now();
-    let mut generator = GeneratorFull::new(config);
+    let mut generator = GeneratorBinary::new(GeneratorType::GeneratorFullBackward, config);
     let mut result = DeciderResultStats::new(config);
     result.set_name("Pre Deciders New".to_string());
     let mut duration_decider = Duration::new(0, 0);
-    let mut reporter = Reporter::new_default(generator.num_machines_total());
+    let mut reporter = Reporter::new_default(generator.num_machines_to_process());
     // let mut append = false;
     loop {
         let (permutations, is_last_batch) = generator.generate_permutation_batch_next();
@@ -50,7 +53,7 @@ pub fn run_generator_pre_deciders(config: &Config) -> DeciderResultStats {
 }
 
 fn pre_deciders_batch(
-    permutations: &[Machine],
+    permutations: &[MachineId],
     result: &mut DeciderResultStats,
     // info on total package size for % calculation
     // total_to_check: u64,
@@ -65,7 +68,7 @@ fn pre_deciders_batch(
         // machine.change_permutation(permutation);
         // let _ = machine.run();
         let mut status =
-            bb_challenge::pre_decider::run_pre_decider_strict(machine.transition_table());
+            bb_challenge_work::pre_decider::run_pre_decider_strict(machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
@@ -110,11 +113,11 @@ fn pre_deciders_batch(
 /// BB4: 'Pre Deciders New Undecided' time elapsed for run with 100,000,000 machines: 1264.743 ms, with generation: 3166.068 ms.
 pub fn run_generator_pre_deciders_undecided(config: &Config) -> DeciderResultStats {
     let start = std::time::Instant::now();
-    let mut generator = GeneratorFull::new(config);
+    let mut generator = GeneratorBinary::new(GeneratorType::GeneratorFullBackward, config);
     let mut result = DeciderResultStats::new(config);
     result.set_name("Pre Deciders Undecided New".to_string());
     let mut duration_decider = Duration::new(0, 0);
-    let mut reporter = Reporter::new_default(generator.num_machines_total());
+    let mut reporter = Reporter::new_default(generator.num_machines_to_process());
     // let mut append = false;
     loop {
         let (permutations, is_last_batch) = generator.generate_permutation_batch_next();
@@ -141,7 +144,7 @@ pub fn run_generator_pre_deciders_undecided(config: &Config) -> DeciderResultSta
 }
 
 fn pre_deciders_batch_undecided(
-    permutations: &[Machine],
+    permutations: &[MachineId],
     result: &mut DeciderResultStats,
     // info on total package size for % calculation
     total_to_check: u64,
@@ -155,7 +158,8 @@ fn pre_deciders_batch_undecided(
     for machine in permutations.iter() {
         // machine.change_permutation(machine);
         // let _ = machine.run();
-        let status = bb_challenge::pre_decider::run_pre_decider_strict(machine.transition_table());
+        let status =
+            bb_challenge_work::pre_decider::run_pre_decider_strict(machine.transition_table());
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);

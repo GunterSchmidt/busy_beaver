@@ -1,6 +1,6 @@
-use bb_challenge::{
+use bb_challenge_work::{
     // decider_bouncer::DeciderBouncer, decider_expanding_loop::DeciderExpandingLoop,
-    machine::Machine,
+    machine_id::MachineId,
 };
 
 // #[allow(clippy::vec_init_then_push)]

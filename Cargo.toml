@@ -9,6 +9,7 @@ num-format = "0.4"
 rand = "0.9"
 # bb_challenge = { path = "../bb_challenge", features = ["bb_debug"] }
 bb_challenge = { path = "../bb_challenge" }
+bb_challenge_work = { path = "../bb_challenge_work" }
 
 
 [features]
