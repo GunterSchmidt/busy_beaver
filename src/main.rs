@@ -100,7 +100,7 @@ fn test_single_machine() {
 
 fn test_single_machine_binary() {
     let start = std::time::Instant::now();
-    let machine = NotableMachine::Bb3Rado.machine();
+    let machine = NotableMachine::BB3Rado.machine();
     let config_single = Config::builder(machine.n_states())
         .write_html_file(true)
         .write_html_line_limit(25_000)
