@@ -1,4 +1,7 @@
-use bb_challenge::config::{Config, StepTypeSmall};
+use bb_challenge::{
+    config::{Config, StepTypeSmall},
+    status,
+};
 use bb_challenge_work::{
     decider::decider_result::{BatchData, EndReason},
     decider::decider_result_worker::ResultWorker,
@@ -20,15 +23,14 @@ pub fn cycler_html_filter(batch_data: &mut BatchData) -> ResultWorker {
         .write_html_file(true)
         .build();
     for (i, status) in batch_data.machines_decided.states.iter().enumerate() {
-        if let bb_challenge_work::status::MachineStatus::DecidedEndless(
-            bb_challenge_work::status::EndlessReason::Cycler(steps, _),
-        ) = status
+        if let status::MachineStatus::DecidedEndless(status::EndlessReason::Cycler(steps, _)) =
+            status
         {
             if *steps > MIN_STEPS_HTML {
                 let machine = batch_data.machines_decided.machines[i];
-                let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
+                let mi = MachineInfo::new(machine, *status);
                 println!("Cycler Html: {mi}");
-                bb_challenge_work::decider::decider_cycler::DeciderCycler::decide_single_machine_deprecated(
+                bb_challenge_work::decider::decider_cycler::DeciderCycler::decide_single_machine(
                     &machine,
                     &config_html,
                 );
@@ -55,15 +57,13 @@ pub fn bouncer_html_filter(batch_data: &mut BatchData) -> ResultWorker {
         .write_html_file(true)
         .build();
     for (i, status) in batch_data.machines_decided.states.iter().enumerate() {
-        if let bb_challenge_work::status::MachineStatus::DecidedEndless(
-            bb_challenge_work::status::EndlessReason::Bouncer(steps),
-        ) = status
+        if let status::MachineStatus::DecidedEndless(status::EndlessReason::Bouncer(steps)) = status
         {
             if *steps > MIN_STEPS_HTML {
                 let machine = batch_data.machines_decided.machines[i];
-                let mi = MachineInfo::new(machine.id(), *machine.transition_table(), *status);
+                let mi = MachineInfo::new(machine, *status);
                 println!("Bouncer Html: {mi}");
-                bb_challenge_work::decider::decider_bouncer_128::DeciderBouncer128::decide_single_machine_deprecated(
+                bb_challenge_work::decider::decider_bouncer_128::DeciderBouncer128::decide_single_machine(
                     &machine,
                     &config_html,
                 );

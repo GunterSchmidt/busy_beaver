@@ -1,7 +1,12 @@
 #![allow(unused)]
 use std::time::Duration;
 
-use bb_challenge::config::Config;
+use bb_challenge::{
+    config::Config,
+    decider::pre_decider::{self, run_pre_decider_strict},
+    machine_binary::MachineBinary,
+    status::{MachineStatus, UndecidedReason},
+};
 use bb_challenge_work::{
     data_provider::{
         generator::Generator,
@@ -9,11 +14,9 @@ use bb_challenge_work::{
         DataProvider,
     },
     decider::decider_result::{DeciderResultStats, DurationDataProvider},
-    machine_id::MachineId,
-    pre_decider::PreDeciderRun,
     reporter::Reporter,
-    status::{MachineStatus, UndecidedReason},
 };
+
 pub const PRINT_UNDECIDED_MACHINES: usize = 3;
 
 /// This run goes over the specified data, usually BB4 and just runs the pre-deciders.
@@ -53,7 +56,7 @@ pub fn run_generator_pre_deciders(config: &Config) -> DeciderResultStats {
 }
 
 fn pre_deciders_batch(
-    permutations: &[MachineId],
+    permutations: &[MachineBinary],
     result: &mut DeciderResultStats,
     // info on total package size for % calculation
     // total_to_check: u64,
@@ -67,8 +70,7 @@ fn pre_deciders_batch(
     for machine in permutations.iter() {
         // machine.change_permutation(permutation);
         // let _ = machine.run();
-        let mut status =
-            bb_challenge_work::pre_decider::run_pre_decider_strict(machine.transition_table());
+        let mut status = run_pre_decider_strict(machine);
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
@@ -144,7 +146,7 @@ pub fn run_generator_pre_deciders_undecided(config: &Config) -> DeciderResultSta
 }
 
 fn pre_deciders_batch_undecided(
-    permutations: &[MachineId],
+    permutations: &[MachineBinary],
     result: &mut DeciderResultStats,
     // info on total package size for % calculation
     total_to_check: u64,
@@ -158,8 +160,7 @@ fn pre_deciders_batch_undecided(
     for machine in permutations.iter() {
         // machine.change_permutation(machine);
         // let _ = machine.run();
-        let status =
-            bb_challenge_work::pre_decider::run_pre_decider_strict(machine.transition_table());
+        let status = pre_decider::run_pre_decider_strict(machine);
 
         // if machine.id == 322636617 {
         //     println!("{}", machine);
