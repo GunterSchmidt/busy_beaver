@@ -22,6 +22,7 @@ use bb_challenge::{
     config::{Config, CoreUsage},
     data_provider::{bb_file_reader, enumerator_binary::EnumeratorType},
     decider::{
+        decider_bouncer_128::DeciderBouncer128,
         decider_cycler::DeciderCycler,
         decider_engine,
         decider_hold_long::DeciderHoldLong,
@@ -125,19 +126,18 @@ fn main() {
         evaluate_bb_challenge_file();
         return;
 
-        let n_states = 5;
-        let decider_last = 3;
+        let n_states = 3;
+        let decider_last = 4;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
             .machine_limit(1000_000_000_000)
+            // .limit_machines_undecided(200)
             // .machine_limit(50_000_000)
             // .step_limit_cycler(1500)
             // .step_limit_bouncer(5000)
             // .step_limit_hold(1_000_000)
             // .limit_machines_decided(100000)
             // if set, then these machines will be printed to disk
-            // .limit_machines_undecided(200)
-            .file_id_range(0..50_000)
             // .generator_first_rotate_field_front(true)
             // .generator_full_batch_size_request(10_000)
             // .generator_reduced_batch_size_request(8_000_000)
@@ -145,32 +145,16 @@ fn main() {
             // .cpu_utilization(25)
             .build();
         println!("Config 1: {config_1}");
-        // let config_bouncer = Config::builder(n_states)
-        //     // 10_000_000_000 for BB4
-        //     // .machine_limit(100_000_000_000)
-        //     // .step_limit_hold(500)
-        //     // .step_limit_cycler(1500)
-        //     .step_limit_bouncer(2000)
-        //     .limit_machines_decided(1000)
-        //     .limit_machines_undecided(100)
-        //     // .file_id_range(0..1_000_000)
-        //     // .generator_batch_size_request_full(5_000_000)
-        //     // .generator_reduced_batch_size_request(8_000_000)
-        //     // .limit_machines_undecided(20)
-        //     // .write_html_file(true)
-        //     // .cpu_utilization(100)
-        //     .build();
-        // println!("Config Bouncer: {config_bouncer}");
         let config_2 = Config::builder_from_config(&config_1)
             // .machine_limit(100_000_000_000)
-            // .step_limit_cycler(110_000)
+            .step_limit_decider_cycler(110_000)
             // .step_limit_bouncer(5_000)
             // .limit_machines_undecided(100)
             // .step_limit_cycler(50_000)
             // .step_limit_bouncer(200_000)
             // .limit_machines_decided(100)
             // .limit_machines_undecided(100)
-            .write_html_file(true)
+            // .write_html_file(true)
             .build();
         println!("Config 2: {config_2}");
 
@@ -274,7 +258,10 @@ fn main() {
             if res == MachineStatus::NoDecision {
                 res = DeciderCycler::decide_single_machine(&machine, &config);
             }
-            if res == MachineStatus::NoDecision {
+            if let MachineStatus::Undecided(_, _, _) = res {
+                res = DeciderBouncer128::decide_single_machine(&machine, &config);
+            }
+            if let MachineStatus::Undecided(_, _, _) = res {
                 res = DeciderHoldLong::decide_single_machine(&machine, &config);
             }
             println!("Result: {res}");
@@ -324,7 +311,7 @@ fn build_decider_config<'a>(config_1: &'a Config, config_2: &'a Config) -> Vec<D
         // dc_bouncer_1_apex,
         dc_bouncer_1,
         // dc_bouncer_1_self_ref,
-        // dc_cycler_2,
+        dc_cycler_2,
         // dc_bouncer_2,
         dc_hold,
     ];
@@ -342,8 +329,8 @@ fn evaluate_bb_challenge_file() {
         // .limit_machines_decided(100000)
         // if set, then these machines will be printed to disk
         // .limit_machines_undecided(200)
-        .file_id_range(0..50_000)
-        // .write_html_file(true)
+        .file_id_range(0..30_000)
+        .write_html_file(true)
         .build();
     println!("Config 1: {config_1}");
     let config_2 = Config::builder_from_config(&config_1)
