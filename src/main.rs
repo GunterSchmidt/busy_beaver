@@ -26,31 +26,14 @@ use bb_challenge::{
         decider_cycler::DeciderCycler,
         decider_engine,
         decider_hold_long::DeciderHoldLong,
+        decider_hold_macro::DeciderHoldMacro,
         pre_decider::{self, PreDecider, PreDeciderRun},
         Decider, DeciderConfig, DeciderStandard,
     },
     html,
-    machine_binary::{MachineBinary, NotableMachineBinary},
+    machine_binary::{MachineBinary, MachineId, NotableMachineBinary},
     status::MachineStatus,
 };
-// use bb_challenge_work::{
-//     data_provider::{
-//         generator::{Generator, GeneratorStandard},
-//         generator_binary::GeneratorType,
-//         DataProvider,
-//     },
-//     decider::{
-//         self, decider_bouncer_128_speed_up, decider_bouncer_apex, decider_cycler, decider_engine,
-//         decider_hold_compact::DeciderHoldCompact, decider_hold_long_v3::DeciderHoldLong, Decider,
-//         DeciderConfig, DeciderStandard,
-//     },
-//     html,
-//     machine_id::MachineId,
-//     machine_info::MachineInfo,
-//     reporter::Reporter,
-//     single_thread_worker::SingleThreadWorker,
-//     CoreUsage,
-// };
 
 use busy_beaver::{
     // test_run_deciders::{run_generator_pre_deciders, run_generator_pre_deciders_undecided},
@@ -92,16 +75,23 @@ fn test_timed() {
 }
 
 fn test_single_machine_binary() {
-    let start = std::time::Instant::now();
-    let machine = NotableMachineBinary::BB3Rado.machine();
-    let config_single = Config::builder(machine.n_states())
+    // let machine = NotableMachineBinary::BB3Rado.machine_id();
+    let machine = NotableMachineBinary::BB4Max.machine_id();
+    let config = Config::builder(machine.n_states())
         .write_html_file(true)
         .write_html_line_limit(25_000)
         .step_limit_decider_cycler(50_000)
         .step_limit_decider_bouncer(5000)
         .build();
+    let start = std::time::Instant::now();
     // let status = DeciderHoldLong::decide_single_machine(&machine, &config_single);
-    // println!("Machine: {}", status);
+    let status = DeciderHoldMacro::decide_single_machine(&machine, &config);
+    let mut dhm = DeciderHoldMacro::new(&config);
+    let status_1 = dhm.decide_machine(&machine);
+    let status_2 = dhm.decide_machine(&machine);
+    println!("Machine: {}", status);
+    println!("Machine: {}", status_1);
+    println!("Machine: {}", status_2);
     let duration = start.elapsed();
     println!("Duration: {duration:?}");
 }
@@ -122,16 +112,17 @@ fn main() {
     if args.len() < 2 {
         // show_struct_sizes();
         // bb_challenge::decider::decider_hold_long::test_decider_hold_u128_applies_bb5_max();
-        // test_single_machine_binary();
-        evaluate_bb_challenge_file();
+        // evaluate_bb_challenge_file();
+        test_single_machine_binary();
         return;
 
         let n_states = 3;
-        let decider_last = 4;
+        let decider_last = 2;
         let config_1 = Config::builder(n_states)
             // 10_000_000_000 for BB4
             .machine_limit(1000_000_000_000)
             // .limit_machines_undecided(200)
+            .write_html_file(true)
             // .machine_limit(50_000_000)
             // .step_limit_cycler(1500)
             // .step_limit_bouncer(5000)
@@ -141,7 +132,6 @@ fn main() {
             // .generator_first_rotate_field_front(true)
             // .generator_full_batch_size_request(10_000)
             // .generator_reduced_batch_size_request(8_000_000)
-            // .write_html_file(true)
             // .cpu_utilization(25)
             .build();
         println!("Config 1: {config_1}");
@@ -163,8 +153,8 @@ fn main() {
         let result = decider_engine::run_decider_chain_gen(
             &decider_configs[0..decider_last],
             // EnumeratorType::EnumeratorFullForward,
-            // EnumeratorType::EnumeratorReducedForward,
-            EnumeratorType::EnumeratorReducedBackward,
+            EnumeratorType::EnumeratorReducedForward,
+            // EnumeratorType::EnumeratorReducedBackward,
             CoreUsage::MultiCore,
         );
 
@@ -220,12 +210,12 @@ fn main() {
     } else {
         // use argument handler
         let arg_value = arg_handler::standard_args(&args);
-        let mut machine: Option<MachineBinary> = None;
+        let mut machine: Option<MachineId> = None;
         match arg_value {
             // arg_handler::ArgValue::Machine(m) => machine = Some(*m),
-            arg_handler::ArgValue::Machine(table) => {
-                if table.has_two_symbols() {
-                    let t = MachineBinary::try_from(*table);
+            arg_handler::ArgValue::Machine(mg) => {
+                if mg.has_two_symbols() {
+                    let t = MachineId::try_from(*mg);
                     match t {
                         Ok(tc) => machine = Some(tc),
                         Err(e) => println!("{e}"),
@@ -233,9 +223,9 @@ fn main() {
                 } else {
                     println!(
                         "This machine has {} symbols and cannot be handled here.",
-                        table.dimensions().n_symbols
+                        mg.dimensions().n_symbols
                     );
-                    println!("{table}");
+                    println!("{mg}");
                 }
             }
             arg_handler::ArgValue::Done => {}
@@ -254,7 +244,7 @@ fn main() {
                 .step_limit_decider_halt(1000)
                 .write_html_file(true)
                 .build();
-            let mut res = pre_decider::run_pre_decider_simple(&machine);
+            let mut res = pre_decider::run_pre_decider_simple(&machine.machine());
             if res == MachineStatus::NoDecision {
                 res = DeciderCycler::decide_single_machine(&machine, &config);
             }

@@ -1,6 +1,6 @@
 // This lib only exists to allow criterion tests.
 
-use bb_challenge::config::StepTypeBig;
+use bb_challenge::config::StepBig;
 
 // pub mod test_run_deciders;
 
@@ -14,7 +14,7 @@ use bb_challenge::config::StepTypeBig;
 pub const GENERATOR_LIMIT: u64 = 50_000_000;
 pub const GENERATOR_BATCH_SIZE_REQUEST: usize = 10_000_000; // GENERATOR_BATCH_SIZE_RECOMMENDATION;
 pub const N_STATES: usize = 4;
-pub const STEP_LIMIT: StepTypeBig = 110; // 50_000_000;
+pub const STEP_LIMIT: StepBig = 110; // 50_000_000;
 pub const TAPE_SIZE_LIMIT: usize = 20000;
 pub const USE_CPU_PERCENT: usize = 100;
 
