@@ -25,8 +25,8 @@ use bb_challenge::{
         decider_bouncer_128::DeciderBouncer128,
         decider_cycler::DeciderCycler,
         decider_engine,
-        decider_hold_long::DeciderHoldLong,
-        decider_hold_macro::DeciderHoldMacro,
+        decider_halt_long::DeciderHaltLong,
+        decider_halt_macro::DeciderHaltMacro,
         pre_decider::{self, PreDecider, PreDeciderRun},
         Decider, DeciderConfig, DeciderStandard,
     },
@@ -69,7 +69,7 @@ use crate::struct_sizes::show_struct_sizes;
 
 fn test_timed() {
     let start = std::time::Instant::now();
-    bb_challenge::decider::decider_hold_long::test_decider_hold_u128_applies_bb5_max();
+    bb_challenge::decider::decider_halt_long::test_decider_halt_applies_bb5_max();
     let duration = start.elapsed();
     println!("Duration: {duration:?}");
 }
@@ -85,8 +85,8 @@ fn test_single_machine_binary() {
         .build();
     let start = std::time::Instant::now();
     // let status = DeciderHoldLong::decide_single_machine(&machine, &config_single);
-    let status = DeciderHoldMacro::decide_single_machine(&machine, &config);
-    let mut dhm = DeciderHoldMacro::new(&config);
+    let status = DeciderHaltMacro::decide_single_machine(&machine, &config);
+    let mut dhm = DeciderHaltMacro::new(&config);
     let status_1 = dhm.decide_machine(&machine);
     let status_2 = dhm.decide_machine(&machine);
     println!("Machine: {}", status);
@@ -112,8 +112,12 @@ fn main() {
     if args.len() < 2 {
         // show_struct_sizes();
         // bb_challenge::decider::decider_hold_long::test_decider_hold_u128_applies_bb5_max();
-        // evaluate_bb_challenge_file();
-        test_single_machine_binary();
+        evaluate_bb_challenge_file();
+        // bb_challenge_work::data_provider::generator_universal::validate_next_with_batch_no();
+        // test_single_thread_worker();
+        // test_single_machine_binary();
+        // let config = Config::new_default(1);
+        bb_challenge::data_provider::enumerator_tnf::test_enumerator_tnf();
         return;
 
         let n_states = 3;
@@ -201,7 +205,7 @@ fn main() {
             // let hold_count = m_decided.iter().filter(|m| m.status() == MachineStatus::)
             let mut m_hold = Vec::new();
             for m in m_decided.iter() {
-                if let MachineStatus::DecidedHalts(_) = m.status() {
+                if let MachineStatus::DecidedHalt(_) = m.status() {
                     m_hold.push(*m);
                 }
             }
@@ -241,9 +245,14 @@ fn main() {
             println!("{machine}");
             // let res = machine.decide_hold();
             let config = Config::builder(machine.n_states())
-                .step_limit_decider_halt(1000)
+                .step_limit_decider_cycler(110_000)
                 .write_html_file(true)
                 .build();
+            // let (config_1, config_2) = DeciderConfig::standard_config_builder(&config);
+            // println!("Config 1: {config_1}");
+            // println!("Config 2: {config_2}");
+            // let decider_configs = DeciderConfig::standard_decider(&config_1, &config_2);
+
             let mut res = pre_decider::run_pre_decider_simple(&machine.machine());
             if res == MachineStatus::NoDecision {
                 res = DeciderCycler::decide_single_machine(&machine, &config);
@@ -252,7 +261,7 @@ fn main() {
                 res = DeciderBouncer128::decide_single_machine(&machine, &config);
             }
             if let MachineStatus::Undecided(_, _, _) = res {
-                res = DeciderHoldLong::decide_single_machine(&machine, &config);
+                res = DeciderHaltLong::decide_single_machine(&machine, &config);
             }
             println!("Result: {res}");
         }
@@ -313,7 +322,7 @@ fn evaluate_bb_challenge_file() {
     let n_states = 5;
     let decider_last = 3;
     let config_1 = Config::builder(n_states)
-        // .step_limit_cycler(1500)
+        // .step_limit_decider_cycler(150)
         // .step_limit_bouncer(5000)
         // .step_limit_hold(1_000_000)
         // .limit_machines_decided(100000)
